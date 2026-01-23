@@ -36,7 +36,7 @@ export default function Menu() {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-8 shadow-lg">
         <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-1">TransApp</h1>
+          <h1 className="text-2xl font-bold mb-1">Transporte App</h1>
           <p className="text-blue-100 text-sm">Sistema de Transporte</p>
         </div>
       </div>
