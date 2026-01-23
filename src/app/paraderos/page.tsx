@@ -7,9 +7,16 @@ import { VehicleDriverAssignment } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { User, Car, Phone, CreditCard, Calendar, Loader2, ArrowRight, MapPin, ArrowLeft } from 'lucide-react';
+import { User, Car, Phone, CreditCard, Calendar, Loader2, ArrowRight, MapPin, ArrowLeft, LogOut } from 'lucide-react';
 
 type Paradero = 'CAMIARA' | 'TOQUEPALA';
+
+interface MyDriverData {
+  paradero: Paradero;
+  name: string;
+  plate: string;
+  timestamp: number;
+}
 
 export default function Paraderos() {
   const router = useRouter();
@@ -19,15 +26,17 @@ export default function Paraderos() {
   const [selectedDriver, setSelectedDriver] = useState<VehicleDriverAssignment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentParadero, setCurrentParadero] = useState<Paradero>('CAMIARA');
+  
+  // Estado para agregar mi registro
+  const [myDriver, setMyDriver] = useState<MyDriverData | null>(null);
 
   useEffect(() => {
     fetchAssignments();
   }, []);
 
   useEffect(() => {
-    // Distribuir conductores entre paraderos
     distributeDrivers();
-  }, [allAssignments, currentParadero]);
+  }, [allAssignments, currentParadero, myDriver]);
 
   const fetchAssignments = async () => {
     try {
@@ -41,21 +50,17 @@ export default function Paraderos() {
   };
 
   const distributeDrivers = () => {
-    if (allAssignments.length === 0) {
+    if (allAssignments.length === 0 && !myDriver) {
       setDisplayedAssignments([]);
       return;
     }
 
-    // Dividir conductores entre los dos paraderos
-    // Los índices pares van a CAMIARA, los impares a TOQUEPALA
     const camiaraDrivers = allAssignments.filter((_, index) => index % 2 === 0);
-    const toquepalanDrivers = allAssignments.filter((_, index) => index % 2 !== 0);
+    const toquepalaDrivers = allAssignments.filter((_, index) => index % 2 !== 0);
 
-    if (currentParadero === 'CAMIARA') {
-      setDisplayedAssignments(camiaraDrivers);
-    } else {
-      setDisplayedAssignments(toquepalanDrivers);
-    }
+    let driversToShow = currentParadero === 'CAMIARA' ? camiaraDrivers : toquepalaDrivers;
+
+    setDisplayedAssignments(driversToShow);
   };
 
   const handleDriverClick = (assignment: VehicleDriverAssignment) => {
@@ -66,6 +71,28 @@ export default function Paraderos() {
   const toggleParadero = () => {
     setCurrentParadero(prev => prev === 'CAMIARA' ? 'TOQUEPALA' : 'CAMIARA');
   };
+
+  const handleAddToQueue = () => {
+    // Datos automáticos del usuario logueado
+    const newDriver: MyDriverData = {
+      paradero: currentParadero,
+      name: 'Guillermo Pérez', 
+      plate: 'AEF123', 
+      timestamp: Date.now()
+    };
+
+    setMyDriver(newDriver);
+  };
+
+  const handleRemoveFromQueue = () => {
+    setMyDriver(null);
+  };
+
+  const openAddModal = () => {
+    handleAddToQueue();
+  };
+
+  const isInCurrentParadero = myDriver && myDriver.paradero === currentParadero;
 
   if (loading) {
     return (
@@ -80,7 +107,6 @@ export default function Paraderos() {
       {/* Header */}
       <div className="bg-gradient-to-r from-green-600 to-green-800 text-white px-6 py-6 shadow-lg sticky top-0 z-10">
         <div className="max-w-md mx-auto space-y-4">
-          {/* Botón Volver y Título */}
           <div className="flex items-center gap-3">
             <Button
               onClick={() => router.push('/menu')}
@@ -96,7 +122,6 @@ export default function Paraderos() {
             </div>
           </div>
 
-          {/* Selector de Paradero */}
           <Button
             onClick={toggleParadero}
             className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 font-bold rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
@@ -110,7 +135,7 @@ export default function Paraderos() {
 
       {/* Lista de Conductores */}
       <div className="max-w-md mx-auto px-4 py-6 space-y-3">
-        {displayedAssignments.length === 0 ? (
+        {displayedAssignments.length === 0 && !isInCurrentParadero ? (
           <div className="text-center py-12 text-gray-500">
             <User className="w-16 h-16 mx-auto mb-4 opacity-50" />
             <p>No hay conductores en {currentParadero}</p>
@@ -118,8 +143,10 @@ export default function Paraderos() {
         ) : (
           <>
             <div className="text-sm font-semibold text-gray-700 mb-3">
-              {displayedAssignments.length} conductor{displayedAssignments.length !== 1 ? 'es' : ''} en {currentParadero}
+              {displayedAssignments.length + (isInCurrentParadero ? 1 : 0)} conductor{displayedAssignments.length + (isInCurrentParadero ? 1 : 0) !== 1 ? 'es' : ''} en {currentParadero}
             </div>
+
+            {/* Mi registro si estoy en este paradero - AL FINAL DE LA COLA */}
             {displayedAssignments.map((assignment) => (
               <Card
                 key={assignment.id}
@@ -127,12 +154,10 @@ export default function Paraderos() {
                 className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-98 border-l-4 border-l-green-500"
               >
                 <div className="flex items-center gap-4">
-                  {/* Avatar */}
                   <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
                     <User className="w-7 h-7 text-white" />
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 text-lg truncate">
                       {assignment.user.firstName} {assignment.user.lastName}
@@ -145,23 +170,66 @@ export default function Paraderos() {
                     </div>
                   </div>
 
-                  {/* Arrow */}
                   <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 </div>
               </Card>
             ))}
+
+            {isInCurrentParadero && (
+              <Card className="p-4 border-l-4 border-l-blue-500 bg-blue-50 shadow-md animate-in slide-in-from-bottom duration-300">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                      <User className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                      {displayedAssignments.length + 1}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 text-lg truncate">
+                        {myDriver.name}
+                      </h3>
+                      <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-semibold">
+                        TÚ
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Car className="w-4 h-4" />
+                      <span className="font-medium">{myDriver.plate}</span>
+                    </div>
+                    <p className="text-xs text-blue-600 font-medium mt-1">
+                      En espera • Posición {displayedAssignments.length + 1}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
           </>
         )}
       </div>
 
-      {/* Botón Ingresar Fijo */}
+      {/* Botón Fijo */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
         <div className="max-w-md mx-auto">
-          <Button
-            className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
-          >
-            INGRESAR A {currentParadero}
-          </Button>
+          {myDriver ? (
+            <Button
+              onClick={handleRemoveFromQueue}
+              className="w-full h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-5 h-5" />
+              RETIRAR DE LA COLA
+            </Button>
+          ) : (
+            <Button
+              onClick={openAddModal}
+              className="w-full h-14 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95"
+            >
+              INGRESAR A {currentParadero}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -176,7 +244,6 @@ export default function Paraderos() {
 
           {selectedDriver && (
             <div className="space-y-4 py-2">
-              {/* Avatar y Nombre */}
               <div className="text-center pb-4 border-b">
                 <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                   <User className="w-10 h-10 text-white" />
@@ -186,7 +253,6 @@ export default function Paraderos() {
                 </h3>
               </div>
 
-              {/* Información del Conductor */}
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <Phone className="w-5 h-5 text-green-600" />
