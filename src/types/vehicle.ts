@@ -1,23 +1,5 @@
-// ==================== ENTITIES / INTERFACES ====================
+// ==================== VEHICLE TYPES ====================
 
-import { User } from ".";
-
-// Company Interface
-export interface Company {
-  id: number;
-  name: string;
-  taxId: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-}
-
-
-
-// Vehicle Interface
 export interface Vehicle {
   id: number;
   licensePlate: string;
@@ -35,7 +17,6 @@ export interface Vehicle {
   vehicleDrivers?: VehicleDriver[];
 }
 
-// Vehicle Driver Assignment Interface
 export interface VehicleDriver {
   id: number;
   assignmentDate: string;
@@ -52,16 +33,13 @@ export interface VehicleDriver {
   vehicle?: Vehicle;
 }
 
-// Alias para mejor semántica (compatibilidad con código existente)
-export type VehicleDriverAssignment = VehicleDriver;
+// Alias para mejor semántica
 export type VehicleAssignment = VehicleDriver;
-
-// Array types for API responses (compatibilidad con código existente)
+export type VehicleDriverAssignment = VehicleDriver;
 export type VehicleDriverAssignments = VehicleDriver[];
 
-// ==================== DTOs (Data Transfer Objects) ====================
+// ==================== VEHICLE DTOs ====================
 
-// Create Vehicle DTO
 export interface CreateVehicleDto {
   licensePlate: string;
   brand: string;
@@ -71,7 +49,6 @@ export interface CreateVehicleDto {
   companyId?: number; // Opcional, default 1
 }
 
-// Update Vehicle DTO
 export interface UpdateVehicleDto {
   licensePlate?: string;
   brand?: string;
@@ -82,7 +59,6 @@ export interface UpdateVehicleDto {
   companyId?: number;
 }
 
-// Assign Driver DTO
 export interface AssignDriverDto {
   userId: number;
   vehicleId: number;
@@ -90,7 +66,6 @@ export interface AssignDriverDto {
   notes?: string;
 }
 
-// Unassign Driver DTO
 export interface UnassignDriverDto {
   assignmentId: number;
   unassignmentDate: string; // Format: YYYY-MM-DD
@@ -98,7 +73,7 @@ export interface UnassignDriverDto {
   notes?: string;
 }
 
-// ==================== API RESPONSES ====================
+// ==================== VEHICLE RESPONSES ====================
 
 export interface VehicleResponse {
   message: string;
@@ -118,17 +93,11 @@ export interface VehicleStats {
   available: number;
 }
 
-// ==================== ERROR HANDLING ====================
-
-export interface ApiError {
-  statusCode: number;
-  message: string;
-  error: string;
-}
-
 // ==================== TYPE HELPERS ====================
 
 export type VehicleStatus = 'active' | 'inactive';
 export type AssignmentStatus = 'active' | 'inactive';
-export type UserRole = 0 | 1; // 0 = driver, 1 = admin
-export type UserStatus = 'active' | 'inactive';
+
+// Import de User (para evitar circular dependency)
+import type { User } from './users';
+import type { Company } from './company';
