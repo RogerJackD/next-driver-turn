@@ -1,68 +1,83 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, User, Lock, CarTaxiFront } from 'lucide-react';
+import { Loader2, Truck, User, Lock } from 'lucide-react';
+import { authUtils } from '@/utils/auth';
+import { authService } from '@/services/auth.service';
 
 export default function Login() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Si ya está autenticado, redirigir al menú
+    if (authUtils.isAuthenticated()) {
+      router.push('/menu');
+    }
+  }, [router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simular un pequeño delay para mejor UX
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      // Llamar al servicio de autenticación
+      const response = await authService.login({ email, password });
 
-    if (username === 'user' && password === '123') {
-      // Login exitoso
+      // Guardar token y usuario en localStorage
+      authUtils.setToken(response.accessToken);
+      authUtils.setUser(response.user);
+
+      // Redirigir al menú
       router.push('/menu');
-    } else {
-      setError('Usuario o contraseña incorrectos');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Usuario o contraseña incorrectos';
+      setError(errorMessage);
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-600 to-blue-800 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-blue-600 to-blue-800 px-4 py-8">
       <div className="w-full max-w-sm">
         <Card className="border-0 shadow-2xl">
           <CardHeader className="space-y-4 pb-6">
             <div className="flex justify-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl flex items-center justify-center shadow-lg">
-                <CarTaxiFront  className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-blue-700 rounded-3xl flex items-center justify-center shadow-lg">
+                <Truck className="w-10 h-10 text-white" />
               </div>
             </div>
             <div className="text-center space-y-1">
-              <CardTitle className="text-2xl font-bold">Transporte App</CardTitle>
+              <CardTitle className="text-2xl font-bold">TransApp</CardTitle>
               <CardDescription>Sistema de Transporte</CardDescription>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Username Input */}
+              {/* Email Input */}
               <div className="space-y-2">
-                <Label htmlFor="username" className="font-semibold">Usuario</Label>
+                <Label htmlFor="email" className="font-semibold">Email</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 h-12 rounded-xl"
-                    placeholder="Ingresa tu usuario"
+                    placeholder="tu@email.com"
                     required
                   />
                 </div>
@@ -98,7 +113,7 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-xl font-semibold shadow-lg text-base"
+                className="w-full h-12 bg-linear-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 rounded-xl font-semibold shadow-lg text-base"
               >
                 {loading ? (
                   <>
