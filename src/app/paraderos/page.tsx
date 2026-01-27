@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { vehicleDriverService } from '@/services/vehicleDriverService';
+import { vehicleDriverService } from '@/services/vehicleDriver.service';
 import { VehicleDriverAssignment } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -105,14 +105,14 @@ export default function Paraderos() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-800 text-white px-6 py-6 shadow-lg sticky top-0 z-10">
+      <div className="bg-linear-to-r from-green-600 to-green-800 text-white px-6 py-6 shadow-lg sticky top-0 z-10">
         <div className="max-w-md mx-auto space-y-4">
           <div className="flex items-center gap-3">
             <Button
               onClick={() => router.push('/menu')}
               variant="ghost"
               size="icon"
-              className="h-10 w-10 hover:bg-white/20 text-white flex-shrink-0"
+              className="h-10 w-10 hover:bg-white/20 text-white shrink-0"
             >
               <ArrowLeft className="w-6 h-6" />
             </Button>
