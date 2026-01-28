@@ -37,33 +37,34 @@ export const createUserSchema = z.object({
     .string()
     .min(6, 'La contraseña debe tener al menos 6 caracteres')
     .max(50, 'La contraseña no puede exceder 50 caracteres'),
+
+  confirmPassword: z
+    .string()
+    .min(1, 'Confirma tu contraseña'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmPassword'],
 });
-
-export type CreateUserFormData = z.infer<typeof createUserSchema>;
-
 
 export const updateUserSchema = z.object({
   firstName: z
     .string()
     .min(1, 'El nombre es requerido')
     .max(100, 'El nombre no puede exceder 100 caracteres')
-    .trim()
-    .optional(),
+    .trim(),
 
   lastName: z
     .string()
     .min(1, 'El apellido es requerido')
     .max(100, 'El apellido no puede exceder 100 caracteres')
-    .trim()
-    .optional(),
+    .trim(),
 
   email: z
     .string()
     .email('Email inválido')
     .max(100, 'El email no puede exceder 100 caracteres')
     .trim()
-    .toLowerCase()
-    .optional(),
+    .toLowerCase(),
 
   phone: z
     .string()
@@ -75,14 +76,8 @@ export const updateUserSchema = z.object({
   idCard: z
     .string()
     .length(8, 'El DNI debe tener exactamente 8 dígitos')
-    .regex(/^\d{8}$/, 'El DNI debe contener solo números')
-    .optional(),
-
-  status: z
-    .enum(['active', 'inactive', 'suspended'], {
-      message: 'Estado inválido'
-    })
-    .optional(),
+    .regex(/^\d{8}$/, 'El DNI debe contener solo números'),
 });
 
+export type CreateUserFormData = z.infer<typeof createUserSchema>;
 export type UpdateUserFormData = z.infer<typeof updateUserSchema>;
