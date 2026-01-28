@@ -1,12 +1,12 @@
-import{ 
+import { 
   Vehicle, 
   VehicleAssignment, 
   CreateVehicleDto, 
   UpdateVehicleDto,
   AssignDriverDto,
   UnassignDriverDto,
-  VehicleStats
 } from '@/types';
+import { authUtils } from '@/utils/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,9 +20,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
         body: JSON.stringify(data),
       });
 
@@ -39,26 +37,19 @@ export const vehiclesService = {
   },
 
   /**
-   * Obtener todos los vehículos
+   * Obtener todos los vehículos (automáticamente filtrados por companyId en backend)
    * @param status - Filtrar por estado (active/inactive)
-   * @param companyId - Filtrar por empresa
    */
-  getAll: async (
-    status?: string,
-    companyId?: number
-  ): Promise<Vehicle[]> => {
+  getAll: async (status?: string): Promise<Vehicle[]> => {
     try {
       const params = new URLSearchParams();
       if (status) params.append('status', status);
-      if (companyId) params.append('companyId', companyId.toString());
 
       const url = `${API_BASE_URL}/vehicles${params.toString() ? `?${params.toString()}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -73,21 +64,84 @@ export const vehiclesService = {
   },
 
   /**
-   * Obtener vehículos disponibles (sin conductor asignado)
-   * @param companyId - Filtrar por empresa
+   * Búsqueda avanzada de vehículos
+   * @param query - Término de búsqueda
+   * @param status - Filtrar por estado
    */
-  getAvailable: async (companyId?: number): Promise<Vehicle[]> => {
+  search: async (query?: string, status?: string): Promise<Vehicle[]> => {
     try {
       const params = new URLSearchParams();
-      if (companyId) params.append('companyId', companyId.toString());
+      if (query) params.append('q', query);
+      if (status) params.append('status', status);
 
-      const url = `${API_BASE_URL}/vehicles/available${params.toString() ? `?${params.toString()}` : ''}`;
+      const url = `${API_BASE_URL}/vehicles/search${params.toString() ? `?${params.toString()}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching vehicles:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener vehículos activos
+   */
+  getActive: async (): Promise<Vehicle[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/vehicles/active`, {
+        method: 'GET',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching active vehicles:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener vehículos inactivos
+   */
+  getInactive: async (): Promise<Vehicle[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/vehicles/inactive`, {
+        method: 'GET',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching inactive vehicles:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener vehículos disponibles (sin conductor asignado)
+   */
+  getAvailable: async (): Promise<Vehicle[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/vehicles/available`, {
+        method: 'GET',
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -108,9 +162,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -132,9 +184,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
         body: JSON.stringify(data),
       });
 
@@ -157,9 +207,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -181,9 +229,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/${id}/reactivate`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -209,9 +255,7 @@ export const vehiclesService = {
         `${API_BASE_URL}/vehicles/${vehicleId}/current-driver`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authUtils.getAuthHeaders(),
         }
       );
 
@@ -236,9 +280,7 @@ export const vehiclesService = {
         `${API_BASE_URL}/vehicles/${vehicleId}/assignment-history`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authUtils.getAuthHeaders(),
         }
       );
 
@@ -264,9 +306,7 @@ export const vehiclesService = {
         `${API_BASE_URL}/vehicles/${vehicleId}/active-assignment`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authUtils.getAuthHeaders(),
         }
       );
 
@@ -290,9 +330,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/assignments`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
         body: JSON.stringify(data),
       });
 
@@ -317,9 +355,7 @@ export const vehiclesService = {
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/assignments/unassign`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
         body: JSON.stringify(data),
       });
 
@@ -356,9 +392,7 @@ export const vehiclesService = {
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -381,9 +415,7 @@ export const vehiclesService = {
         `${API_BASE_URL}/vehicles/assignments/driver/${userId}`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authUtils.getAuthHeaders(),
         }
       );
 
@@ -409,9 +441,7 @@ export const vehiclesService = {
         `${API_BASE_URL}/vehicles/assignments/driver/${userId}/active`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: authUtils.getAuthHeaders(),
         }
       );
 
@@ -429,54 +459,30 @@ export const vehiclesService = {
   // ==================== UTILIDADES ====================
 
   /**
-   * Buscar vehículos por término de búsqueda
-   * Esta función filtra localmente, pero puedes implementar búsqueda en backend
+   * Obtener nombre completo del vehículo
    */
-  search: async (query: string): Promise<Vehicle[]> => {
-    try {
-      const vehicles = await vehiclesService.getAll();
-      const lowercaseQuery = query.toLowerCase();
-
-      return vehicles.filter(
-        (vehicle) =>
-          vehicle.licensePlate.toLowerCase().includes(lowercaseQuery) ||
-          vehicle.brand.toLowerCase().includes(lowercaseQuery) ||
-          vehicle.model.toLowerCase().includes(lowercaseQuery) ||
-          (vehicle.internalNumber &&
-            vehicle.internalNumber.toLowerCase().includes(lowercaseQuery))
-      );
-    } catch (error) {
-      console.error('Error searching vehicles:', error);
-      throw error;
-    }
+  getDisplayName: (vehicle: Vehicle): string => {
+    return `${vehicle.brand} ${vehicle.model} - ${vehicle.licensePlate}`;
   },
 
   /**
-   * Obtener estadísticas de vehículos
-   * Nota: Este endpoint debe implementarse en el backend
+   * Verificar si un vehículo está activo
    */
-  getStats: async (companyId?: number): Promise<VehicleStats> => {
-    try {
-      const params = new URLSearchParams();
-      if (companyId) params.append('companyId', companyId.toString());
+  isActive: (vehicle: Vehicle): boolean => {
+    return vehicle.status === 'active';
+  },
 
-      const url = `${API_BASE_URL}/vehicles/stats${params.toString() ? `?${params.toString()}` : ''}`;
+  /**
+   * Verificar si un vehículo tiene conductor asignado
+   */
+  hasDriver: (vehicle: Vehicle): boolean => {
+    return vehicle.vehicleDrivers?.some(vd => vd.status === 'active') || false;
+  },
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} - ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching vehicle stats:', error);
-      throw error;
-    }
+  /**
+   * Obtener conductor actual del vehículo (de las relaciones cargadas)
+   */
+  getCurrentDriverFromRelations: (vehicle: Vehicle) => {
+    return vehicle.vehicleDrivers?.find(vd => vd.status === 'active');
   },
 };
