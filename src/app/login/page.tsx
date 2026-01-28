@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Truck, User, Lock } from 'lucide-react';
+import { Loader2, User, Lock, CarTaxiFront } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
 import { authService } from '@/services/auth.service';
 
@@ -55,11 +55,11 @@ export default function Login() {
           <CardHeader className="space-y-4 pb-6">
             <div className="flex justify-center">
               <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-blue-700 rounded-3xl flex items-center justify-center shadow-lg">
-                <Truck className="w-10 h-10 text-white" />
+                <CarTaxiFront className="w-10 h-10 text-white" />
               </div>
             </div>
             <div className="text-center space-y-1">
-              <CardTitle className="text-2xl font-bold">TransApp</CardTitle>
+              <CardTitle className="text-2xl font-bold">Transport App</CardTitle>
               <CardDescription>Sistema de Transporte</CardDescription>
             </div>
           </CardHeader>
