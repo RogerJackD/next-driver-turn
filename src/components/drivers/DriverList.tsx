@@ -1,5 +1,5 @@
 import { User } from '@/types';
-import { ConductorCard } from './ConductorCard';
+import { ConductorCard } from './DriverCard';
 
 interface ConductorListProps {
   conductores: User[];

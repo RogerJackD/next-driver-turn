@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { MoreVertical, Edit, Power, PowerOff, Mail, Phone, CreditCard } from 'lucide-react';
 import { ConfirmStatusDialog } from './dialogs/ConfirmStatusDialog';
+import { EditConductorDialog } from './dialogs/EditDriverDialog';
 
 interface ConductorCardProps {
   conductor: User;
@@ -19,12 +20,13 @@ interface ConductorCardProps {
 
 export function ConductorCard({ conductor, onToggleStatus, onRefresh }: ConductorCardProps) {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const isActive = conductor.status === 'active';
 
   const handleEdit = () => {
-    console.log('Editar conductor:', conductor.id);
+    setIsEditDialogOpen(true);
   };
 
   const handleStatusChange = () => {
@@ -118,13 +120,21 @@ export function ConductorCard({ conductor, onToggleStatus, onRefresh }: Conducto
         </div>
       </Card>
 
-      {/* Dialog de confirmación */}
+      {/* Dialog de confirmación de estado */}
       <ConfirmStatusDialog
         open={isConfirmDialogOpen}
         onOpenChange={setIsConfirmDialogOpen}
         conductor={conductor}
         onConfirm={confirmStatusChange}
         isLoading={isLoading}
+      />
+
+      {/* Dialog de edición */}
+      <EditConductorDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        conductor={conductor}
+        onSuccess={onRefresh}
       />
     </>
   );
