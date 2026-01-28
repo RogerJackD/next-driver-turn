@@ -1,26 +1,23 @@
-import { 
-  User, 
-  CreateUserDto, 
-  UpdateUserDto,
-  ChangePasswordDto
-} from '@/types';
+import { User, CreateUserDto, UpdateUserDto, ChangePasswordDto, SearchUsersParams } from '@/types';
+import { authUtils } from '@/utils/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
-export const usersService = {
-  // ==================== CRUD DE USUARIOS ====================
+export const userService = {
 
   /**
-   * Crear un nuevo usuario
+   * Crear un nuevo usuario (solo conductores - role 0)
+   * El admin está autenticado y su companyId se toma del JWT en el backend
    */
   create: async (data: CreateUserDto): Promise<Omit<User, 'password'>> => {
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        headers: authUtils.getAuthHeaders(),
+        body: JSON.stringify({
+          ...data,
+          role: 0, // Siempre crear como conductor
+        }),
       });
 
       if (!response.ok) {
@@ -36,26 +33,41 @@ export const usersService = {
   },
 
   /**
-   * Obtener todos los usuarios
-   * @param role - Filtrar por rol (0 = driver, 1 = admin)
-   * @param companyId - Filtrar por empresa
+   * Obtener todos los usuarios conductores de la empresa del admin autenticado
    */
-  getAll: async (
-    role?: 0 | 1,
-    companyId?: number
-  ): Promise<User[]> => {
-    try {
-      const params = new URLSearchParams();
-      if (role !== undefined) params.append('role', role.toString());
-      if (companyId) params.append('companyId', companyId.toString());
+    getDrivers: async (): Promise<User[]> => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/users`, {
+          method: 'GET',
+          headers: authUtils.getAuthHeaders(),
+        });
 
-      const url = `${API_BASE_URL}/users${params.toString() ? `?${params.toString()}` : ''}`;
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} - ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching drivers:', error);
+        throw error;
+      }
+    },
+
+  /**
+   * Buscar usuarios con filtros avanzados
+   */
+  search: async (params: SearchUsersParams): Promise<User[]> => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.q) queryParams.append('q', params.q);
+      if (params.status) queryParams.append('status', params.status);
+      if (params.role !== undefined) queryParams.append('role', params.role.toString());
+
+      const url = `${API_BASE_URL}/users/search${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -64,69 +76,61 @@ export const usersService = {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error searching users:', error);
       throw error;
     }
   },
 
   /**
-   * Obtener solo conductores (role = 0)
+   * Obtener usuarios activos de la empresa
    */
-  getDrivers: async (): Promise<User[]> => {
-    return usersService.getAll(0);
-  },
-
-  /**
-   * Obtener solo administradores (role = 1)
-   */
-  getAdmins: async (): Promise<User[]> => {
-    return usersService.getAll(1);
-  },
-
-  /**
-   * Obtener usuarios por empresa
-   */
-  getByCompany: async (companyId: number): Promise<User[]> => {
-    return usersService.getAll(undefined, companyId);
-  },
-
-  /**
-   * Obtener un usuario por ID
-   */
-  getById: async (id: number): Promise<User> => {
+  getActive: async (): Promise<User[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/users/active`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `Error: ${response.status}`);
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error(`Error fetching user ${id}:`, error);
+      console.error('Error fetching active users:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener usuarios inactivos de la empresa
+   */
+  getInactive: async (): Promise<User[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/inactive`, {
+        method: 'GET',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching inactive users:', error);
       throw error;
     }
   },
 
   /**
    * Obtener perfil del usuario actual (me)
-   * Requiere autenticación
    */
   getMyProfile: async (): Promise<User> => {
     try {
       const response = await fetch(`${API_BASE_URL}/users/me`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Aquí deberías agregar el token de autenticación
-          // 'Authorization': `Bearer ${token}`,
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -142,15 +146,35 @@ export const usersService = {
   },
 
   /**
-   * Actualizar un usuario
+   * Obtener un usuario por ID
    */
+  getById: async (id: number): Promise<User> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'GET',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching user ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+ * Actualizar un conductor
+ */
   update: async (id: number, data: UpdateUserDto): Promise<Omit<User, 'password'>> => {
     try {
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
         body: JSON.stringify(data),
       });
 
@@ -176,9 +200,7 @@ export const usersService = {
     try {
       const response = await fetch(`${API_BASE_URL}/users/${id}/change-password`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
         body: JSON.stringify(data),
       });
 
@@ -201,9 +223,7 @@ export const usersService = {
     try {
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authUtils.getAuthHeaders(),
       });
 
       if (!response.ok) {
@@ -217,36 +237,6 @@ export const usersService = {
   },
 
   // ==================== UTILIDADES ====================
-
-  /**
-   * Buscar usuarios por término de búsqueda
-   * Filtra localmente por nombre, apellido o email
-   */
-  search: async (query: string, role?: 0 | 1): Promise<User[]> => {
-    try {
-      const users = await usersService.getAll(role);
-      const lowercaseQuery = query.toLowerCase();
-
-      return users.filter(
-        (user) =>
-          user.firstName.toLowerCase().includes(lowercaseQuery) ||
-          user.lastName.toLowerCase().includes(lowercaseQuery) ||
-          user.email.toLowerCase().includes(lowercaseQuery) ||
-          (user.idCard && user.idCard.toLowerCase().includes(lowercaseQuery)) ||
-          (user.phone && user.phone.toLowerCase().includes(lowercaseQuery))
-      );
-    } catch (error) {
-      console.error('Error searching users:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Buscar solo conductores
-   */
-  searchDrivers: async (query: string): Promise<User[]> => {
-    return usersService.search(query, 0);
-  },
 
   /**
    * Obtener nombre completo del usuario
@@ -277,37 +267,6 @@ export const usersService = {
   },
 
   /**
-   * Obtener conductores disponibles (sin asignación activa)
-   * Nota: Esto requiere integración con el servicio de vehículos
-   */
-  getAvailableDrivers: async (): Promise<User[]> => {
-    try {
-      const drivers = await usersService.getDrivers();
-      // Aquí podrías filtrar por conductores que no tienen asignación activa
-      // Esto requeriría una llamada al servicio de vehículos
-      return drivers.filter(driver => driver.status === 'active');
-    } catch (error) {
-      console.error('Error fetching available drivers:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Validar formato de email
-   */
-  isValidEmail: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  },
-
-  /**
-   * Validar formato de contraseña (mínimo 6 caracteres)
-   */
-  isValidPassword: (password: string): boolean => {
-    return password.length >= 6 && password.length <= 50;
-  },
-
-  /**
    * Obtener el nombre del rol
    */
   getRoleName: (role: 0 | 1): string => {
@@ -324,34 +283,5 @@ export const usersService = {
       suspended: 'Suspendido',
     };
     return statusNames[status] || status;
-  },
-
-  /**
-   * Obtener estadísticas de usuarios
-   * Calcula estadísticas localmente a partir de todos los usuarios
-   */
-  getStats: async (): Promise<{
-    total: number;
-    drivers: number;
-    admins: number;
-    active: number;
-    inactive: number;
-    suspended: number;
-  }> => {
-    try {
-      const users = await usersService.getAll();
-      
-      return {
-        total: users.length,
-        drivers: users.filter(u => u.role === 0).length,
-        admins: users.filter(u => u.role === 1).length,
-        active: users.filter(u => u.status === 'active').length,
-        inactive: users.filter(u => u.status === 'inactive').length,
-        suspended: users.filter(u => u.status === 'suspended').length,
-      };
-    } catch (error) {
-      console.error('Error calculating user stats:', error);
-      throw error;
-    }
   },
 };
