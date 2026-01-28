@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, User, MapPin, LogOut, UserCog } from 'lucide-react';
+import { FileText, User, MapPin, LogOut, UserCog, Car } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
 
 export default function Menu() {
@@ -49,13 +49,20 @@ export default function Menu() {
       icon: UserCog,
       color: 'from-orange-500 to-orange-600',
       onClick: () => router.push('/conductores')
+    },
+    {
+      id: 5,
+      title: 'Vehículos',
+      icon: Car,
+      color: 'from-red-500 to-red-600',
+      onClick: () => router.push('/vehiculos')
     }
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Header */}
-      <div className="bg-linear-to-r from-blue-600 to-blue-800 text-white px-6 py-8 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-8 shadow-lg">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-1">
             <h1 className="text-2xl font-bold">Transport App</h1>
@@ -84,7 +91,7 @@ export default function Menu() {
                 onClick={item.onClick}
                 className="aspect-square flex flex-col items-center justify-center gap-4 cursor-pointer hover:shadow-xl transition-all duration-300 active:scale-95 border-0 shadow-md"
               >
-                <div className={`w-16 h-16 bg-linear-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-lg`}>
+                <div className={`w-16 h-16 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-lg`}>
                   <Icon className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold text-gray-800 text-center px-2">
