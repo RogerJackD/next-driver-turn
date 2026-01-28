@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, User, MapPin, LogOut } from 'lucide-react';
+import { FileText, User, MapPin, LogOut, UserCog } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
 
 export default function Menu() {
@@ -42,6 +42,13 @@ export default function Menu() {
       icon: MapPin,
       color: 'from-green-500 to-green-600',
       onClick: () => router.push('/paraderos')
+    },
+    {
+      id: 4,
+      title: 'Conductores',
+      icon: UserCog,
+      color: 'from-orange-500 to-orange-600',
+      onClick: () => router.push('/conductores')
     }
   ];
 
@@ -51,7 +58,7 @@ export default function Menu() {
       <div className="bg-linear-to-r from-blue-600 to-blue-800 text-white px-6 py-8 shadow-lg">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-2xl font-bold">TransApp</h1>
+            <h1 className="text-2xl font-bold">Transport App</h1>
             <Button
               onClick={handleLogout}
               variant="ghost"
