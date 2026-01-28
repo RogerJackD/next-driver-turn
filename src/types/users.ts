@@ -20,19 +20,16 @@ export interface User {
 // ==================== USER DTOs ====================
 
 export interface CreateUserDto {
-  companyId?: number;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
   idCard: string;
   password: string;
-  role: 0 | 1; // 0 = driver, 1 = admin
-  status?: 'active' | 'inactive' | 'suspended';
+  // role NO se incluye - siempre será 0 (driver) por defecto
 }
 
 export interface UpdateUserDto {
-  companyId?: number;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -45,6 +42,14 @@ export interface UpdateUserDto {
 export interface ChangePasswordDto {
   currentPassword: string;
   newPassword: string;
+}
+
+// ==================== SEARCH/FILTER PARAMS ====================
+
+export interface SearchUsersParams {
+  q?: string; // query text
+  status?: 'active' | 'inactive' | 'suspended';
+  role?: 0 | 1;
 }
 
 // ==================== TYPE HELPERS ====================
