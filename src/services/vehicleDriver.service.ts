@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 export const vehicleDriverService = {
   getAssignments: async (): Promise<VehicleDriverAssignments> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/vehicles/assign-driver`, {
+      const response = await fetch(`${API_BASE_URL}/vehicles/assignments/all`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
