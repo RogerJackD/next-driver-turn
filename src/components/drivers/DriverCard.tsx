@@ -10,20 +10,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { MoreVertical, Edit, Power, PowerOff, Mail, Phone, CreditCard } from 'lucide-react';
 import { ConfirmStatusDialog } from './dialogs/ConfirmStatusDialog';
-import { EditConductorDialog } from './dialogs/EditDriverDialog';
+import { EditDriverDialog } from './dialogs/EditDriverDialog';
 
-interface ConductorCardProps {
-  conductor: User;
+interface DriverCardProps {
+  driver: User;
   onToggleStatus: (id: number, currentStatus: string) => Promise<void>;
   onRefresh: () => Promise<void>;
 }
 
-export function ConductorCard({ conductor, onToggleStatus, onRefresh }: ConductorCardProps) {
+export function DriverCard({ driver, onToggleStatus, onRefresh }: DriverCardProps) {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const isActive = conductor.status === 'active';
+  const isActive = driver.status === 'active';
 
   const handleEdit = () => {
     setIsEditDialogOpen(true);
@@ -36,7 +36,7 @@ export function ConductorCard({ conductor, onToggleStatus, onRefresh }: Conducto
   const confirmStatusChange = async () => {
     setIsLoading(true);
     try {
-      await onToggleStatus(conductor.id, conductor.status);
+      await onToggleStatus(driver.id, driver.status);
       setIsConfirmDialogOpen(false);
     } catch (error) {
       console.error('Error al cambiar estado:', error);
@@ -53,14 +53,14 @@ export function ConductorCard({ conductor, onToggleStatus, onRefresh }: Conducto
           <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 font-bold text-white ${
             isActive ? 'bg-linear-to-br from-orange-500 to-orange-600' : 'bg-gray-400'
           }`}>
-            {conductor.firstName.charAt(0)}{conductor.lastName.charAt(0)}
+            {driver.firstName.charAt(0)}{driver.lastName.charAt(0)}
           </div>
 
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold text-gray-900 truncate">
-                {conductor.firstName} {conductor.lastName}
+                {driver.firstName} {driver.lastName}
               </h3>
               <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
                 isActive 
@@ -74,15 +74,15 @@ export function ConductorCard({ conductor, onToggleStatus, onRefresh }: Conducto
             <div className="space-y-1 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                <span>{conductor.idCard}</span>
+                <span>{driver.idCard}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />
-                <span>{conductor.phone}</span>
+                <span>{driver.phone}</span>
               </div>
               <div className="flex items-center gap-2 truncate">
                 <Mail className="w-4 h-4" />
-                <span className="truncate">{conductor.email}</span>
+                <span className="truncate">{driver.email}</span>
               </div>
             </div>
           </div>
@@ -124,16 +124,16 @@ export function ConductorCard({ conductor, onToggleStatus, onRefresh }: Conducto
       <ConfirmStatusDialog
         open={isConfirmDialogOpen}
         onOpenChange={setIsConfirmDialogOpen}
-        conductor={conductor}
+        driver={driver}
         onConfirm={confirmStatusChange}
         isLoading={isLoading}
       />
 
       {/* Dialog de edición */}
-      <EditConductorDialog
+      <EditDriverDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        conductor={conductor}
+        driver={driver}
         onSuccess={onRefresh}
       />
     </>

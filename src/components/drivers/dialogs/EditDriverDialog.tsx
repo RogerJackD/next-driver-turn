@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { updateUserSchema, UpdateUserFormData } from '@/validators/userSchema';
 import { userService } from '@/services/users.service';
 import { User } from '@/types';
@@ -14,21 +15,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { zodResolver } from '@hookform/resolvers/zod';
 
-interface EditConductorDialogProps {
+interface EditDriverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  conductor: User | null;
+  driver: User | null;
   onSuccess: () => void;
 }
 
-export function EditConductorDialog({
+export function EditDriverDialog({
   open,
   onOpenChange,
-  conductor,
+  driver,
   onSuccess,
-}: EditConductorDialogProps) {
+}: EditDriverDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -41,23 +41,23 @@ export function EditConductorDialog({
   });
 
   useEffect(() => {
-    if (conductor) {
+    if (driver) {
       reset({
-        firstName: conductor.firstName,
-        lastName: conductor.lastName,
-        email: conductor.email,
-        phone: conductor.phone || '',
-        idCard: conductor.idCard,
+        firstName: driver.firstName,
+        lastName: driver.lastName,
+        email: driver.email,
+        phone: driver.phone || '',
+        idCard: driver.idCard,
       });
     }
-  }, [conductor, reset]);
+  }, [driver, reset]);
 
   const onSubmit = async (data: UpdateUserFormData) => {
-    if (!conductor) return;
+    if (!driver) return;
 
     setIsLoading(true);
     try {
-      await userService.update(conductor.id, data);
+      await userService.update(driver.id, data);
       onOpenChange(false);
       onSuccess();
     } catch (error) {

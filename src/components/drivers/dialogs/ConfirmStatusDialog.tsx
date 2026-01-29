@@ -13,7 +13,7 @@ import { AlertCircle, Loader2 } from 'lucide-react';
 interface ConfirmStatusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  conductor: User;
+  driver: User;
   onConfirm: () => Promise<void>;
   isLoading: boolean;
 }
@@ -21,11 +21,11 @@ interface ConfirmStatusDialogProps {
 export function ConfirmStatusDialog({
   open,
   onOpenChange,
-  conductor,
+  driver,
   onConfirm,
   isLoading,
 }: ConfirmStatusDialogProps) {
-  const isActive = conductor.status === 'active';
+  const isActive = driver.status === 'active';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,7 +44,7 @@ export function ConfirmStatusDialog({
           <DialogDescription className="text-center">
             {isActive ? (
               <>
-                <strong>{conductor.firstName} {conductor.lastName}</strong> será desactivado.
+                <strong>{driver.firstName} {driver.lastName}</strong> será desactivado.
                 <br />
                 <span className="text-sm mt-2 block">
                   No se eliminará, podrás reactivarlo cuando desees.
@@ -52,7 +52,7 @@ export function ConfirmStatusDialog({
               </>
             ) : (
               <>
-                <strong>{conductor.firstName} {conductor.lastName}</strong> será reactivado.
+                <strong>{driver.firstName} {driver.lastName}</strong> será reactivado.
                 <br />
                 <span className="text-sm mt-2 block">
                   Podrá volver a usar el sistema normalmente.
