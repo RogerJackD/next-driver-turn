@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, User, Lock, CarTaxiFront } from 'lucide-react';
+import { Loader2, User, Lock, CarTaxiFront, Eye, EyeOff } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
 import { authService } from '@/services/auth.service';
 
@@ -17,6 +17,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     // Si ya está autenticado, redirigir al menú
@@ -59,8 +60,8 @@ export default function Login() {
               </div>
             </div>
             <div className="text-center space-y-1">
-              <CardTitle className="text-2xl font-bold">Transport App</CardTitle>
-              <CardDescription>Sistema de Transporte</CardDescription>
+              <CardTitle className="text-2xl font-bold">Control de Parqueo de Autos</CardTitle>
+              <CardDescription>Empresa Los Forjadores</CardDescription>
             </div>
           </CardHeader>
 
@@ -90,13 +91,27 @@ export default function Login() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-12 rounded-xl"
+                    className="pl-10 pr-10 h-12 rounded-xl"
                     placeholder="••••••••"
                     required
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 h-12 w-10"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-gray-400" />
+                    )}
+                  </Button>
                 </div>
               </div>
 
@@ -131,7 +146,7 @@ export default function Login() {
         {/* Footer Info */}
         <div className="mt-6 text-center">
           <p className="text-white text-sm opacity-90">
-            Sistema de Gestión de Transporte v1.0
+            Control de Parqueo de Autos v1.0
           </p>
         </div>
       </div>

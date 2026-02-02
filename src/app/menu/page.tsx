@@ -107,7 +107,7 @@ export default function Menu() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-8 shadow-lg">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-1">
-            <h1 className="text-2xl font-bold">Transport App</h1>
+            <h1 className="text-xl font-bold leading-tight">Control de Parqueo de Autos</h1>
             <Button
               onClick={handleLogout}
               variant="ghost"
@@ -118,7 +118,7 @@ export default function Menu() {
               Salir
             </Button>
           </div>
-          <p className="text-blue-100 text-sm">Sistema de Transporte</p>
+          <p className="text-blue-100 text-sm">Empresa Los Forjadores</p>
         </div>
       </div>
 
