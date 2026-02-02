@@ -13,13 +13,6 @@ export const createUserSchema = z.object({
     .max(100, 'El apellido no puede exceder 100 caracteres')
     .trim(),
 
-  email: z
-    .string()
-    .min(1, 'El email es requerido')
-    .email('Email inválido')
-    .max(100, 'El email no puede exceder 100 caracteres')
-    .trim()
-    .toLowerCase(),
 
   phone: z
     .string()
@@ -59,12 +52,6 @@ export const updateUserSchema = z.object({
     .max(100, 'El apellido no puede exceder 100 caracteres')
     .trim(),
 
-  email: z
-    .string()
-    .email('Email inválido')
-    .max(100, 'El email no puede exceder 100 caracteres')
-    .trim()
-    .toLowerCase(),
 
   phone: z
     .string()
