@@ -119,7 +119,7 @@ export default function Login() {
               {error && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertDescription className="text-sm">
-                    {error}
+                    Credenciales invalidas. Por favor, intenta de nuevo.
                   </AlertDescription>
                 </Alert>
               )}
