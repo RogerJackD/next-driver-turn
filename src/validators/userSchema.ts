@@ -67,14 +67,11 @@ export const updateUserSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
-  currentPassword: z
-    .string()
-    .min(3, 'La contraseña actual debe tener al menos 3 caracteres'),
-
   newPassword: z
     .string()
-    .min(6, 'La nueva contraseña debe tener al menos 6 caracteres')
-    .max(50, 'La nueva contraseña no puede exceder 50 caracteres'),
+    .min(3, 'La contraseña debe tener al menos 3 caracteres')
+    .max(50, 'La contraseña no puede exceder 50 caracteres')
+    .regex(/^[a-zA-Z0-9]+$/, 'La contraseña solo puede contener letras y números'),
 
   confirmPassword: z
     .string()

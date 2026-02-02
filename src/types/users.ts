@@ -36,11 +36,10 @@ export interface UpdateUserDto {
   phone?: string;
   idCard?: string;
   role?: 0 | 1;
-  status?: 'active' | 'inactive' | 'suspended';
+  status?: number; // 0=DELETED, 1=NEW, 2=ACTIVE, 3=BLOCKED
 }
 
 export interface ChangePasswordDto {
-  currentPassword: string;
   newPassword: string;
 }
 

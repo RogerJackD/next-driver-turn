@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { changePasswordSchema, ChangePasswordFormData } from '@/validators/userSchema';
 import { userService } from '@/services/users.service';
+import { UserStatus } from '@/constants/enums';
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,6 @@ export function ChangePasswordDialog({
   onSuccess,
 }: ChangePasswordDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
@@ -53,13 +53,17 @@ export function ChangePasswordDialog({
     setSuccess(false);
 
     try {
-      const { confirmPassword, ...changePasswordData } = data;
-      await userService.changePassword(userId, changePasswordData);
+      // Enviar solo newPassword al endpoint
+      await userService.changePassword(userId, { newPassword: data.newPassword });
+
+      // Si es usuario nuevo, actualizar status a ACTIVE (2)
+      if (isNewUser) {
+        await userService.update(userId, { status: UserStatus.ACTIVE });
+      }
 
       setSuccess(true);
       reset();
 
-      // Cerrar el modal después de 1.5 segundos y ejecutar callback de éxito
       setTimeout(() => {
         onOpenChange(false);
         setSuccess(false);
@@ -89,13 +93,11 @@ export function ChangePasswordDialog({
       <DialogContent
         className="max-w-md mx-4 rounded-2xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => {
-          // Prevenir cierre si es usuario nuevo
           if (isNewUser) {
             e.preventDefault();
           }
         }}
         onEscapeKeyDown={(e) => {
-          // Prevenir cierre con Escape si es usuario nuevo
           if (isNewUser) {
             e.preventDefault();
           }
@@ -112,43 +114,12 @@ export function ChangePasswordDialog({
           </DialogTitle>
           <DialogDescription className="text-center">
             {isNewUser
-              ? 'Como eres un usuario nuevo, te recomendamos cambiar tu contraseña por seguridad.'
-              : 'Ingresa tu contraseña actual y tu nueva contraseña.'}
+              ? 'Como eres un usuario nuevo, debes establecer tu contraseña para continuar.'
+              : 'Ingresa tu nueva contraseña.'}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
-          {/* Contraseña Actual */}
-          <div className="space-y-2">
-            <Label htmlFor="currentPassword">Contraseña Actual *</Label>
-            <div className="relative">
-              <Input
-                id="currentPassword"
-                type={showCurrentPassword ? 'text' : 'password'}
-                {...register('currentPassword')}
-                className="h-11 pr-10"
-                placeholder="••••••••"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-11 w-10"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                tabIndex={-1}
-              >
-                {showCurrentPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-500" />
-                )}
-              </Button>
-            </div>
-            {errors.currentPassword && (
-              <p className="text-sm text-red-600">{errors.currentPassword.message}</p>
-            )}
-          </div>
-
           {/* Nueva Contraseña */}
           <div className="space-y-2">
             <Label htmlFor="newPassword">Nueva Contraseña *</Label>
@@ -179,13 +150,13 @@ export function ChangePasswordDialog({
               <p className="text-sm text-red-600">{errors.newPassword.message}</p>
             )}
             <p className="text-xs text-gray-500">
-              Mínimo 6 caracteres
+              Mínimo 3 caracteres, solo letras y números
             </p>
           </div>
 
           {/* Confirmar Nueva Contraseña */}
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña *</Label>
+            <Label htmlFor="confirmPassword">Confirmar Contraseña *</Label>
             <div className="relative">
               <Input
                 id="confirmPassword"
@@ -227,7 +198,7 @@ export function ChangePasswordDialog({
           {success && (
             <Alert className="rounded-xl bg-green-50 text-green-800 border-green-200">
               <AlertDescription className="text-sm">
-                ¡Contraseña cambiada exitosamente!
+                ¡Contraseña establecida exitosamente!
               </AlertDescription>
             </Alert>
           )}
@@ -242,12 +213,12 @@ export function ChangePasswordDialog({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cambiando contraseña...
+                  Guardando...
                 </>
               ) : success ? (
-                '¡Contraseña actualizada!'
+                '¡Listo!'
               ) : (
-                'Cambiar Contraseña'
+                'Guardar Contraseña'
               )}
             </Button>
 
