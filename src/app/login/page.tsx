@@ -13,7 +13,7 @@ import { authService } from '@/services/auth.service';
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,7 @@ export default function Login() {
 
     try {
       // Llamar al servicio de autenticación
-      const response = await authService.login({ email, password });
+      const response = await authService.login({ name, password });
 
       // Guardar token y usuario en localStorage
       authUtils.setToken(response.accessToken);
@@ -66,18 +66,18 @@ export default function Login() {
 
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Input */}
+              {/* Name Input */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="font-semibold">Email</Label>
+                <Label htmlFor="name" className="font-semibold">Usuario</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="pl-10 h-12 rounded-xl"
-                    placeholder="tu@email.com"
+                    placeholder="Ingresa tu usuario"
                     required
                   />
                 </div>
