@@ -1,18 +1,35 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, User, MapPin, LogOut, UserCog, Car } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
+import { ChangePasswordDialog } from '@/components/auth/ChangePasswordDialog';
 
 export default function Menu() {
   const router = useRouter();
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     if (!authUtils.isAuthenticated()) {
       router.push('/login');
+      return;
+    }
+
+    // Obtener el usuario actual del localStorage
+    const user = authUtils.getUser();
+    if (user) {
+      setUserId(user.id);
+
+      // Si el usuario es nuevo (status === 1), mostrar el modal
+      if (user.status === 1) {
+        setIsNewUser(true);
+        setShowChangePasswordDialog(true);
+      }
     }
   }, [router]);
 
@@ -59,8 +76,33 @@ export default function Menu() {
     }
   ];
 
+  const handleChangePasswordSuccess = () => {
+    setShowChangePasswordDialog(false);
+    setIsNewUser(false);
+
+    // Actualizar el status del usuario en localStorage
+    const user = authUtils.getUser();
+    if (user) {
+      authUtils.setUser({
+        ...user,
+        status: 2, // Cambiar a ACTIVE
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Change Password Dialog */}
+      {userId && (
+        <ChangePasswordDialog
+          open={showChangePasswordDialog}
+          onOpenChange={setShowChangePasswordDialog}
+          userId={userId}
+          isNewUser={isNewUser}
+          onSuccess={handleChangePasswordSuccess}
+        />
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-8 shadow-lg">
         <div className="max-w-md mx-auto">

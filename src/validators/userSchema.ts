@@ -66,5 +66,24 @@ export const updateUserSchema = z.object({
     .regex(/^\d{8}$/, 'El DNI debe contener solo números'),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(3, 'La contraseña actual debe tener al menos 3 caracteres'),
+
+  newPassword: z
+    .string()
+    .min(6, 'La nueva contraseña debe tener al menos 6 caracteres')
+    .max(50, 'La nueva contraseña no puede exceder 50 caracteres'),
+
+  confirmPassword: z
+    .string()
+    .min(1, 'Confirma tu nueva contraseña'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Las contraseñas no coinciden',
+  path: ['confirmPassword'],
+});
+
 export type CreateUserFormData = z.infer<typeof createUserSchema>;
 export type UpdateUserFormData = z.infer<typeof updateUserSchema>;
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;

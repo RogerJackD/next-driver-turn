@@ -11,7 +11,8 @@ export interface LoginResponse {
     email: string;
     role: number;
     companyId: number;
-    status: string;
+    status: number; // 0 = DELETED, 1 = NEW, 2 = ACTIVE, 3 = BLOCKED
+    driverId: number | null;
   };
   accessToken: string;
 }
@@ -23,5 +24,6 @@ export interface AuthUser {
   email: string;
   role: number;
   companyId: number;
-  status: string;
+  status: number; // 0 = DELETED, 1 = NEW, 2 = ACTIVE, 3 = BLOCKED
+  driverId: number | null;
 }
