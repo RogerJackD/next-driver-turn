@@ -1,9 +1,11 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateUserSchema, UpdateUserFormData } from '@/validators/userSchema';
-import { userService } from '@/services/users.service';
-import { User } from '@/types';
+import { updateDriverSchema, UpdateDriverFormData } from '@/validators/driverSchema';
+import { driverService } from '@/services/drivers.service';
+import { Driver } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -14,12 +16,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Pencil, AlertCircle, CheckCircle2, CreditCard } from 'lucide-react';
 
 interface EditDriverDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  driver: User | null;
+  driver: Driver | null;
   onSuccess: () => void;
 }
 
@@ -30,14 +33,16 @@ export function EditDriverDialog({
   onSuccess,
 }: EditDriverDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<UpdateUserFormData>({
-    resolver: zodResolver(updateUserSchema),
+  } = useForm<UpdateDriverFormData>({
+    resolver: zodResolver(updateDriverSchema),
   });
 
   useEffect(() => {
@@ -45,23 +50,39 @@ export function EditDriverDialog({
       reset({
         firstName: driver.firstName,
         lastName: driver.lastName,
-        email: driver.email,
         phone: driver.phone || '',
-        idCard: driver.idCard,
+        observation: driver.observation || '',
       });
+      setApiError(null);
+      setSuccessMessage(null);
     }
   }, [driver, reset]);
 
-  const onSubmit = async (data: UpdateUserFormData) => {
+  const onSubmit = async (data: UpdateDriverFormData) => {
     if (!driver) return;
 
     setIsLoading(true);
+    setApiError(null);
+    setSuccessMessage(null);
+
     try {
-      await userService.update(driver.id, data);
-      onOpenChange(false);
-      onSuccess();
+      await driverService.update(driver.id, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        observation: data.observation || undefined,
+      });
+
+      setSuccessMessage('Conductor actualizado exitosamente');
+
+      setTimeout(() => {
+        setSuccessMessage(null);
+        onOpenChange(false);
+        onSuccess();
+      }, 1500);
     } catch (error) {
-      console.error('Error al actualizar conductor:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar conductor';
+      setApiError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -69,99 +90,121 @@ export function EditDriverDialog({
 
   const handleClose = () => {
     reset();
+    setApiError(null);
+    setSuccessMessage(null);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md mx-4 rounded-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Editar Conductor</DialogTitle>
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Pencil className="h-5 w-5" />
+            Editar Conductor
+          </DialogTitle>
           <DialogDescription>
             Modifica los datos del conductor
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Nombre */}
+          {/* DNI - Solo lectura */}
           <div className="space-y-2">
-            <Label htmlFor="firstName">Nombre *</Label>
+            <Label htmlFor="idCard">DNI</Label>
+            <div className="relative">
+              <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                id="idCard"
+                value={driver?.idCard || ''}
+                className="h-11 pl-10 bg-gray-100 text-gray-600 cursor-not-allowed"
+                disabled
+                readOnly
+              />
+            </div>
+            <p className="text-xs text-gray-500">El DNI no puede ser modificado</p>
+          </div>
+
+          {/* Nombres */}
+          <div className="space-y-2">
+            <Label htmlFor="firstName">Nombres *</Label>
             <Input
               id="firstName"
               {...register('firstName')}
               className="h-11"
-              placeholder="Juan"
+              placeholder="Juan Carlos"
             />
             {errors.firstName && (
               <p className="text-sm text-red-600">{errors.firstName.message}</p>
             )}
           </div>
 
-          {/* Apellido */}
+          {/* Apellidos */}
           <div className="space-y-2">
-            <Label htmlFor="lastName">Apellido *</Label>
+            <Label htmlFor="lastName">Apellidos *</Label>
             <Input
               id="lastName"
               {...register('lastName')}
               className="h-11"
-              placeholder="Pérez"
+              placeholder="Pérez García"
             />
             {errors.lastName && (
               <p className="text-sm text-red-600">{errors.lastName.message}</p>
             )}
           </div>
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register('email')}
-              className="h-11"
-              placeholder="juan.perez@email.com"
-            />
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email.message}</p>
-            )}
-          </div>
-
-          {/* DNI */}
-          <div className="space-y-2">
-            <Label htmlFor="idCard">DNI *</Label>
-            <Input
-              id="idCard"
-              {...register('idCard')}
-              className="h-11"
-              placeholder="12345678"
-              maxLength={8}
-            />
-            {errors.idCard && (
-              <p className="text-sm text-red-600">{errors.idCard.message}</p>
-            )}
-          </div>
-
           {/* Teléfono */}
           <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
+            <Label htmlFor="phone">Teléfono *</Label>
             <Input
               id="phone"
               {...register('phone')}
               className="h-11"
-              placeholder="912345678"
-              maxLength={9}
+              placeholder="987654321"
+              maxLength={20}
             />
             {errors.phone && (
               <p className="text-sm text-red-600">{errors.phone.message}</p>
             )}
           </div>
 
+          {/* Observación */}
+          <div className="space-y-2">
+            <Label htmlFor="observation">Observación (opcional)</Label>
+            <Input
+              id="observation"
+              {...register('observation')}
+              className="h-11"
+              placeholder="Alguna nota adicional..."
+            />
+            {errors.observation && (
+              <p className="text-sm text-red-600">{errors.observation.message}</p>
+            )}
+          </div>
+
+          {/* Mensajes de error y éxito */}
+          {apiError && (
+            <Alert variant="destructive" className="rounded-xl">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{apiError}</AlertDescription>
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert className="rounded-xl bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Botones */}
           <div className="flex flex-col gap-2 pt-4">
             <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full h-11 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+              disabled={isLoading || !!successMessage}
+              className="w-full h-11 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
             >
               {isLoading ? (
                 <>

@@ -3,9 +3,10 @@ import { DriverCard } from './DriverCard';
 
 interface DriverListProps {
   drivers: Driver[];
+  onEditDriver: (driver: Driver) => void;
 }
 
-export function DriverList({ drivers }: DriverListProps) {
+export function DriverList({ drivers, onEditDriver }: DriverListProps) {
   if (drivers.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -18,7 +19,7 @@ export function DriverList({ drivers }: DriverListProps) {
   return (
     <div className="space-y-3">
       {drivers.map((driver) => (
-        <DriverCard key={driver.id} driver={driver} />
+        <DriverCard key={driver.id} driver={driver} onEdit={onEditDriver} />
       ))}
     </div>
   );
