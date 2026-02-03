@@ -17,3 +17,11 @@ export enum UserRole {
   DRIVER = 0,
   ADMIN = 1,
 }
+
+// Diccionario de Estado de Asignación Vehículo-Conductor
+// 0 : Inactivo
+// 1 : Activo
+export enum VehicleDriverStatus {
+  INACTIVE = 0,
+  ACTIVE = 1,
+}

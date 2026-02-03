@@ -8,3 +8,6 @@ export * from './users';
 // Vehicle types
 export * from './vehicle';
 
+// Driver types
+export * from './driver';
+
