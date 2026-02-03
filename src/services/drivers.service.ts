@@ -1,9 +1,33 @@
-import { Driver } from '@/types';
+import { Driver, CreateDriverDto, CreateDriverResponse, PersonByDniResponse } from '@/types';
 import { authUtils } from '@/utils/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const driverService = {
+  /**
+   * Crear un nuevo conductor
+   * Si createUser es true, también crea un usuario con DNI como username y password "123"
+   */
+  create: async (data: CreateDriverDto): Promise<CreateDriverResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers`, {
+        method: 'POST',
+        headers: authUtils.getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating driver:', error);
+      throw error;
+    }
+  },
+
   /**
    * Obtener todos los conductores
    */
@@ -44,6 +68,28 @@ export const driverService = {
       return await response.json();
     } catch (error) {
       console.error('Error searching drivers:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Consultar datos de persona por DNI (servicio externo RENIEC)
+   */
+  getPersonByDni: async (dni: string): Promise<PersonByDniResponse> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/external-services/person-by-dni?dni=${dni}`, {
+        method: 'GET',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(Array.isArray(error.message) ? error.message[0] : error.message);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching person by DNI:', error);
       throw error;
     }
   },
