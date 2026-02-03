@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, User, MapPin, LogOut, UserCog, Car } from 'lucide-react';
+import { FileText, User, MapPin, LogOut, UserCog, Car, Users } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
 import { ChangePasswordDialog } from '@/components/auth/ChangePasswordDialog';
 
@@ -73,6 +73,13 @@ export default function Menu() {
       icon: Car,
       color: 'from-red-500 to-red-600',
       onClick: () => router.push('/vehiculos')
+    },
+    {
+      id: 6,
+      title: 'Usuarios',
+      icon: Users,
+      color: 'from-indigo-500 to-indigo-600',
+      onClick: () => router.push('/usuarios')
     }
   ];
 
