@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authUtils } from '@/utils/auth';
 import { DriverList } from '@/components/drivers/DriverList';
 import { DriverFilters } from '@/components/drivers/DriverFilters';
+import { CreateDriverDialog } from '@/components/drivers/dialogs/CreateDriverDialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Driver } from '@/types';
@@ -32,6 +33,7 @@ export default function DriversPage() {
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
@@ -115,6 +117,7 @@ export default function DriversPage() {
             onSearchChange={setSearchQuery}
             isSearching={isSearching}
             resultsCount={drivers.length}
+            onCreateClick={() => setCreateDialogOpen(true)}
           />
         </div>
       </div>
@@ -122,6 +125,13 @@ export default function DriversPage() {
       <div className="max-w-md mx-auto px-4 py-6">
         <DriverList drivers={drivers} />
       </div>
+
+      {/* Dialog para crear conductor */}
+      <CreateDriverDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={fetchDrivers}
+      />
     </div>
   );
 }
