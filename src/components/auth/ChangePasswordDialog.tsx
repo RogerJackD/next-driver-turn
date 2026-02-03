@@ -91,7 +91,7 @@ export function ChangePasswordDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="max-w-md mx-4 rounded-2xl max-h-[90vh] overflow-y-auto"
+        className="w-[calc(100%-2rem)] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto"
         onInteractOutside={(e) => {
           if (isNewUser) {
             e.preventDefault();
