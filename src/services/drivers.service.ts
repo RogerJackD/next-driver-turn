@@ -1,4 +1,4 @@
-import { Driver, CreateDriverDto, CreateDriverResponse, PersonByDniResponse } from '@/types';
+import { Driver, CreateDriverDto, CreateDriverResponse, UpdateDriverDto, PersonByDniResponse } from '@/types';
 import { authUtils } from '@/utils/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -68,6 +68,29 @@ export const driverService = {
       return await response.json();
     } catch (error) {
       console.error('Error searching drivers:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualizar un conductor
+   */
+  update: async (id: number, data: UpdateDriverDto): Promise<Driver> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers/${id}`, {
+        method: 'PATCH',
+        headers: authUtils.getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating driver:', error);
       throw error;
     }
   },

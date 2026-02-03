@@ -65,6 +65,13 @@ export interface CreateDriverResponse extends Driver {
   user?: DriverUser | null;
 }
 
+export interface UpdateDriverDto {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  observation?: string;
+}
+
 // ==================== EXTERNAL SERVICE: PERSON BY DNI ====================
 
 export interface PersonByDniResponse {

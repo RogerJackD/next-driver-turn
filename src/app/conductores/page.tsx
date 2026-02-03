@@ -6,6 +6,7 @@ import { authUtils } from '@/utils/auth';
 import { DriverList } from '@/components/drivers/DriverList';
 import { DriverFilters } from '@/components/drivers/DriverFilters';
 import { CreateDriverDialog } from '@/components/drivers/dialogs/CreateDriverDialog';
+import { EditDriverDialog } from '@/components/drivers/dialogs/EditDriverDialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Driver } from '@/types';
@@ -34,6 +35,8 @@ export default function DriversPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
@@ -83,6 +86,11 @@ export default function DriversPage() {
     }
   };
 
+  const handleEditDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setEditDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -123,13 +131,21 @@ export default function DriversPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
-        <DriverList drivers={drivers} />
+        <DriverList drivers={drivers} onEditDriver={handleEditDriver} />
       </div>
 
       {/* Dialog para crear conductor */}
       <CreateDriverDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+        onSuccess={fetchDrivers}
+      />
+
+      {/* Dialog para editar conductor */}
+      <EditDriverDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        driver={selectedDriver}
         onSuccess={fetchDrivers}
       />
     </div>

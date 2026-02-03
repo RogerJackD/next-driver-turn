@@ -1,13 +1,23 @@
+'use client';
+
 import { Driver } from '@/types';
 import { driverService } from '@/services/drivers.service';
 import { Card } from '@/components/ui/card';
-import { Phone, CreditCard, Car, CircleSlash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Phone, CreditCard, Car, CircleSlash, MoreVertical, Pencil } from 'lucide-react';
 
 interface DriverCardProps {
   driver: Driver;
+  onEdit: (driver: Driver) => void;
 }
 
-export function DriverCard({ driver }: DriverCardProps) {
+export function DriverCard({ driver, onEdit }: DriverCardProps) {
   const vehicle = driverService.getVehicle(driver);
   const hasVehicle = !!vehicle;
 
@@ -41,8 +51,9 @@ export function DriverCard({ driver }: DriverCardProps) {
           </div>
         </div>
 
-        {/* Vehicle status */}
-        <div className="shrink-0">
+        {/* Actions & Vehicle status */}
+        <div className="flex items-start gap-2 shrink-0">
+          {/* Vehicle status */}
           {hasVehicle ? (
             <div className="flex items-center gap-1.5 bg-green-100 text-green-700 px-2.5 py-1.5 rounded-lg">
               <Car className="w-4 h-4" />
@@ -54,6 +65,28 @@ export function DriverCard({ driver }: DriverCardProps) {
               <span className="text-xs">Sin auto</span>
             </div>
           )}
+
+          {/* Dropdown menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem
+                onClick={() => onEdit(driver)}
+                className="cursor-pointer"
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </Card>
