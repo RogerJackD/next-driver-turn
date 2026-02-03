@@ -29,6 +29,16 @@ export interface CreateUserDto {
   // role NO se incluye - siempre será 0 (driver) por defecto
 }
 
+export interface CreateUserWithRoleDto {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  idCard: string;
+  password: string;
+  role: 0 | 1; // 0 = conductor, 1 = admin
+}
+
 export interface UpdateUserDto {
   firstName?: string;
   lastName?: string;
