@@ -14,7 +14,7 @@ export interface Driver {
   updatedAt: string;
   company?: Company;
   user?: DriverUser | null;
-  vehicleDrivers: VehicleDriver[];
+  vehicleDrivers: DriverVehicleAssignment[];
 }
 
 export interface DriverUser {
@@ -26,7 +26,7 @@ export interface DriverUser {
   status: number; // 0 = DELETED, 1 = NEW, 2 = ACTIVE, 3 = BLOCKED
 }
 
-export interface VehicleDriver {
+export interface DriverVehicleAssignment {
   id: number;
   vehicleId: number;
   driverId: number;

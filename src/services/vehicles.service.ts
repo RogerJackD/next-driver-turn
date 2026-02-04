@@ -1,11 +1,13 @@
-import { 
-  Vehicle, 
-  VehicleAssignment, 
-  CreateVehicleDto, 
+import {
+  Vehicle,
+  VehicleAssignment,
+  CreateVehicleDto,
   UpdateVehicleDto,
   AssignDriverDto,
   UnassignDriverDto,
+  VehicleDriverRelation,
 } from '@/types';
+import { VehicleStatus, VehicleDriverStatus } from '@/constants/enums';
 import { authUtils } from '@/utils/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -274,7 +276,7 @@ export const vehiclesService = {
   /**
    * Obtener historial de asignaciones de un vehículo
    */
-  getAssignmentHistory: async (vehicleId: number): Promise<VehicleAssignment[]> => {
+  getAssignmentHistory: async (vehicleId: number): Promise<VehicleDriverRelation[]> => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/vehicles/${vehicleId}/assignment-history`,
@@ -469,20 +471,27 @@ export const vehiclesService = {
    * Verificar si un vehículo está activo
    */
   isActive: (vehicle: Vehicle): boolean => {
-    return vehicle.status === 'active';
+    return vehicle.status === VehicleStatus.ACTIVE;
   },
 
   /**
    * Verificar si un vehículo tiene conductor asignado
    */
   hasDriver: (vehicle: Vehicle): boolean => {
-    return vehicle.vehicleDrivers?.some(vd => vd.status === 'active') || false;
+    return vehicle.vehicleDrivers?.some(vd => vd.status === VehicleDriverStatus.ACTIVE) || false;
   },
 
   /**
    * Obtener conductor actual del vehículo (de las relaciones cargadas)
    */
-  getCurrentDriverFromRelations: (vehicle: Vehicle) => {
-    return vehicle.vehicleDrivers?.find(vd => vd.status === 'active');
+  getCurrentDriverFromRelations: (vehicle: Vehicle): VehicleDriverRelation | undefined => {
+    return vehicle.vehicleDrivers?.find(vd => vd.status === VehicleDriverStatus.ACTIVE);
+  },
+
+  /**
+   * Obtener texto de estado
+   */
+  getStatusText: (status: VehicleStatus): string => {
+    return status === VehicleStatus.ACTIVE ? 'Activo' : 'Inactivo';
   },
 };
