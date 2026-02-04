@@ -1,3 +1,7 @@
+import { VehicleStatus, VehicleDriverStatus } from '@/constants/enums';
+import type { User } from './users';
+import type { Company } from './company';
+
 // ==================== VEHICLE TYPES ====================
 
 export interface Vehicle {
@@ -8,20 +12,48 @@ export interface Vehicle {
   year: number;
   color: string;
   internalNumber: string;
-  status: 'active' | 'inactive';
+  status: VehicleStatus; // 0 = INACTIVE, 1 = ACTIVE
   createdAt: string;
   updatedAt: string;
   companyId: number | null;
   // Relaciones opcionales (cuando el backend las incluye)
   company?: Company;
-  vehicleDrivers?: VehicleDriver[];
+  vehicleDrivers?: VehicleDriverRelation[];
 }
 
+export interface VehicleDriverRelation {
+  id: number;
+  assignmentDate: string;
+  unassignmentDate: string | null;
+  status: VehicleDriverStatus; // 0 = INACTIVE, 1 = ACTIVE
+  unassignmentReason: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+  vehicleId: number;
+  driverId: number;
+  // Relación con conductor
+  driver?: AssignedDriver;
+}
+
+export interface AssignedDriver {
+  id: number;
+  idCard: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  observation: string | null;
+  companyId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Legacy interface for backwards compatibility
 export interface VehicleDriver {
   id: number;
   assignmentDate: string;
   unassignmentDate: string | null;
-  status: 'active' | 'inactive';
+  status: VehicleDriverStatus;
   unassignmentReason: string | null;
   notes: string | null;
   createdAt: string;
@@ -45,8 +77,9 @@ export interface CreateVehicleDto {
   brand: string;
   model: string;
   year: number;
-  color: string;
-  companyId?: number; // Opcional, default 1
+  color?: string;
+  internalNumber?: string;
+  driverIds?: number[]; // Array de IDs de conductores (el último es el activo)
 }
 
 export interface UpdateVehicleDto {
@@ -55,8 +88,7 @@ export interface UpdateVehicleDto {
   model?: string;
   year?: number;
   color?: string;
-  status?: 'active' | 'inactive';
-  companyId?: number;
+  driverIds?: number[]; // Array de IDs de conductores (el último es el activo)
 }
 
 export interface AssignDriverDto {
@@ -93,11 +125,5 @@ export interface VehicleStats {
   available: number;
 }
 
-// ==================== TYPE HELPERS ====================
-
-export type VehicleStatus = 'active' | 'inactive';
-export type AssignmentStatus = 'active' | 'inactive';
-
-// Import de User (para evitar circular dependency)
-import type { User } from './users';
-import type { Company } from './company';
+// Re-export enums for convenience
+export { VehicleStatus, VehicleDriverStatus } from '@/constants/enums';
