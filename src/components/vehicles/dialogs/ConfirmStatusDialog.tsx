@@ -10,13 +10,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Loader2 } from 'lucide-react';
+import { VehicleStatus } from '@/types';
 
 interface ConfirmStatusDialogProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
   vehiclePlate: string;
-  currentStatus: string;
+  currentStatus: VehicleStatus;
   loading?: boolean;
 }
 
@@ -28,7 +29,7 @@ export function ConfirmStatusDialog({
   currentStatus,
   loading = false,
 }: ConfirmStatusDialogProps) {
-  const isActivating = currentStatus === 'inactive';
+  const isActivating = currentStatus === VehicleStatus.INACTIVE;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
