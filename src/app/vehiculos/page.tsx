@@ -5,26 +5,40 @@ import { useRouter } from 'next/navigation';
 import { authUtils } from '@/utils/auth';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
-import { Vehicle, CreateVehicleDto, UpdateVehicleDto, AssignDriverDto, UnassignDriverDto } from '@/types';
+import { Vehicle, CreateVehicleDto, UpdateVehicleDto, VehicleStatus } from '@/types';
 import { vehiclesService } from '@/services/vehicles.service';
 import { VehicleFilters } from '@/components/vehicles/VehicleFilters';
 import { VehicleList } from '@/components/vehicles/VehicleList';
 import { VehicleFormDialog } from '@/components/vehicles/dialogs/VehicleFormDialog';
-import { AssignDriverDialog } from '@/components/vehicles/dialogs/AssignDriverDialog';
-import { UnassignDriverDialog } from '@/components/vehicles/dialogs/UnassignDriverDialog';
 import { ConfirmStatusDialog } from '@/components/vehicles/dialogs/ConfirmStatusDialog';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function VehiculosPage() {
   const router = useRouter();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
   // Estados para diálogos
   const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [unassignDialogOpen, setUnassignDialogOpen] = useState(false);
   const [confirmStatusDialogOpen, setConfirmStatusDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -32,7 +46,7 @@ export default function VehiculosPage() {
   // Estado para confirmación de cambio de estado
   const [statusChangeData, setStatusChangeData] = useState<{
     id: number;
-    currentStatus: string;
+    currentStatus: VehicleStatus;
     plate: string;
   } | null>(null);
 
@@ -46,33 +60,40 @@ export default function VehiculosPage() {
   }, [router]);
 
   useEffect(() => {
-    // Filtrar vehículos localmente
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const filtered = vehicles.filter(
-        (vehicle) =>
-          vehicle.licensePlate.toLowerCase().includes(query) ||
-          vehicle.brand.toLowerCase().includes(query) ||
-          vehicle.model.toLowerCase().includes(query) ||
-          vehicle.color.toLowerCase().includes(query) ||
-          (vehicle.internalNumber && vehicle.internalNumber.toLowerCase().includes(query))
-      );
-      setFilteredVehicles(filtered);
-    } else {
-      setFilteredVehicles(vehicles);
+    if (!loading) {
+      handleSearch();
     }
-  }, [searchQuery, vehicles]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery]);
 
   const fetchVehicles = async () => {
     try {
       setLoading(true);
       const data = await vehiclesService.getAll();
       setVehicles(data);
-      setFilteredVehicles(data);
     } catch (error) {
       console.error('Error al cargar vehículos:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    try {
+      setIsSearching(true);
+
+      if (!debouncedSearchQuery.trim()) {
+        const data = await vehiclesService.getAll();
+        setVehicles(data);
+        return;
+      }
+
+      const data = await vehiclesService.search(debouncedSearchQuery.trim());
+      setVehicles(data);
+    } catch (error) {
+      console.error('Error searching vehicles:', error);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -118,49 +139,8 @@ export default function VehiculosPage() {
     setFormDialogOpen(true);
   };
 
-  // Handlers para asignación de conductores
-  const handleAssignDriverClick = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
-    setAssignDialogOpen(true);
-  };
-
-  const handleAssignDriver = async (data: AssignDriverDto) => {
-    try {
-      setActionLoading(true);
-      await vehiclesService.assignDriver(data);
-      await fetchVehicles();
-      setAssignDialogOpen(false);
-      setSelectedVehicle(null);
-    } catch (error) {
-      console.error('Error al asignar conductor:', error);
-      throw error;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleUnassignDriverClick = (vehicle: Vehicle) => {
-    setSelectedVehicle(vehicle);
-    setUnassignDialogOpen(true);
-  };
-
-  const handleUnassignDriver = async (data: UnassignDriverDto) => {
-    try {
-      setActionLoading(true);
-      await vehiclesService.unassignDriver(data);
-      await fetchVehicles();
-      setUnassignDialogOpen(false);
-      setSelectedVehicle(null);
-    } catch (error) {
-      console.error('Error al desasignar conductor:', error);
-      throw error;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   // Handler para cambio de estado
-  const handleToggleStatusClick = (id: number, currentStatus: string) => {
+  const handleToggleStatusClick = (id: number, currentStatus: VehicleStatus) => {
     const vehicle = vehicles.find(v => v.id === id);
     if (!vehicle) return;
 
@@ -177,7 +157,7 @@ export default function VehiculosPage() {
 
     try {
       setActionLoading(true);
-      if (statusChangeData.currentStatus === 'active') {
+      if (statusChangeData.currentStatus === VehicleStatus.ACTIVE) {
         await vehiclesService.remove(statusChangeData.id);
       } else {
         await vehiclesService.reactivate(statusChangeData.id);
@@ -226,24 +206,25 @@ export default function VehiculosPage() {
             <div className="flex-1">
               <h1 className="text-2xl font-bold">Vehículos</h1>
               <p className="text-orange-100 text-sm mt-1">
-                {filteredVehicles.length} vehículo{filteredVehicles.length !== 1 ? 's' : ''}
-                {searchQuery && ` (filtrado${filteredVehicles.length !== 1 ? 's' : ''})`}
+                {vehicles.length} vehículo{vehicles.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
 
           {/* Barra de búsqueda */}
-          <VehicleFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+          <VehicleFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            isSearching={isSearching}
+          />
         </div>
       </div>
 
       {/* Lista de vehículos */}
       <div className="max-w-md mx-auto px-4 py-6">
         <VehicleList
-          vehicles={filteredVehicles}
+          vehicles={vehicles}
           onEdit={handleEditClick}
-          onAssignDriver={handleAssignDriverClick}
-          onUnassignDriver={handleUnassignDriverClick}
           onToggleStatus={handleToggleStatusClick}
         />
       </div>
@@ -267,28 +248,6 @@ export default function VehiculosPage() {
           setSelectedVehicle(null);
         }}
         onSubmit={handleVehicleFormSubmit}
-        vehicle={selectedVehicle}
-        loading={actionLoading}
-      />
-
-      <AssignDriverDialog
-        open={assignDialogOpen}
-        onClose={() => {
-          setAssignDialogOpen(false);
-          setSelectedVehicle(null);
-        }}
-        onSubmit={handleAssignDriver}
-        vehicle={selectedVehicle}
-        loading={actionLoading}
-      />
-
-      <UnassignDriverDialog
-        open={unassignDialogOpen}
-        onClose={() => {
-          setUnassignDialogOpen(false);
-          setSelectedVehicle(null);
-        }}
-        onSubmit={handleUnassignDriver}
         vehicle={selectedVehicle}
         loading={actionLoading}
       />
