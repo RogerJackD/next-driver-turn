@@ -117,7 +117,7 @@ export function UnassignDriverDialog({
                     Conductor Actual:
                   </p>
                   <p className="text-sm text-gray-700">
-                    {currentDriver.user?.firstName} {currentDriver.user?.lastName}
+                    {currentDriver.driver?.firstName} {currentDriver.driver?.lastName}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Asignado desde: {new Date(currentDriver.assignmentDate).toLocaleDateString()}
