@@ -25,3 +25,11 @@ export enum VehicleDriverStatus {
   INACTIVE = 0,
   ACTIVE = 1,
 }
+
+// Diccionario de Estado de Vehículo
+// 0 : Inactivo
+// 1 : Activo
+export enum VehicleStatus {
+  INACTIVE = 0,
+  ACTIVE = 1,
+}

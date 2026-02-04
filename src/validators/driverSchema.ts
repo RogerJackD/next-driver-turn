@@ -31,10 +31,7 @@ export const createDriverSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  createUser: z
-    .boolean()
-    .optional()
-    .default(false),
+  createUser: z.boolean(),
 });
 
 export const updateDriverSchema = z.object({
@@ -70,6 +67,6 @@ export const dniSearchSchema = z.object({
     .regex(/^\d{8}$/, 'El DNI debe contener exactamente 8 dígitos numéricos'),
 });
 
-export type CreateDriverFormData = z.infer<typeof createDriverSchema>;
+export type CreateDriverFormData = z.output<typeof createDriverSchema>;
 export type UpdateDriverFormData = z.infer<typeof updateDriverSchema>;
 export type DniSearchFormData = z.infer<typeof dniSearchSchema>;
