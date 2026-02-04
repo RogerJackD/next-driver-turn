@@ -160,13 +160,13 @@ export default function Paraderos() {
 
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 text-lg truncate">
-                      {assignment.user.firstName} {assignment.user.lastName}
+                      {assignment.user?.firstName} {assignment.user?.lastName}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                       <Car className="w-4 h-4" />
-                      <span className="font-medium">{assignment.vehicle.licensePlate}</span>
+                      <span className="font-medium">{assignment.vehicle?.licensePlate}</span>
                       <span className="text-gray-400">•</span>
-                      <span className="truncate">{assignment.vehicle.brand} {assignment.vehicle.model}</span>
+                      <span className="truncate">{assignment.vehicle?.brand} {assignment.vehicle?.model}</span>
                     </div>
                   </div>
 
@@ -249,7 +249,7 @@ export default function Paraderos() {
                   <User className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="font-bold text-xl text-gray-900">
-                  {selectedDriver.user.firstName} {selectedDriver.user.lastName}
+                  {selectedDriver.user?.firstName} {selectedDriver.user?.lastName}
                 </h3>
               </div>
 
@@ -258,7 +258,7 @@ export default function Paraderos() {
                   <Phone className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-xs text-gray-500">Teléfono</p>
-                    <p className="font-semibold text-gray-900">{selectedDriver.user.phone}</p>
+                    <p className="font-semibold text-gray-900">{selectedDriver.user?.phone}</p>
                   </div>
                 </div>
 
@@ -266,7 +266,7 @@ export default function Paraderos() {
                   <CreditCard className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-xs text-gray-500">DNI</p>
-                    <p className="font-semibold text-gray-900">{selectedDriver.user.idCard}</p>
+                    <p className="font-semibold text-gray-900">{selectedDriver.user?.idCard}</p>
                   </div>
                 </div>
 
@@ -275,10 +275,10 @@ export default function Paraderos() {
                   <div>
                     <p className="text-xs text-gray-500">Vehículo</p>
                     <p className="font-semibold text-gray-900">
-                      {selectedDriver.vehicle.licensePlate} - {selectedDriver.vehicle.brand} {selectedDriver.vehicle.model}
+                      {selectedDriver.vehicle?.licensePlate} - {selectedDriver.vehicle?.brand} {selectedDriver.vehicle?.model}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {selectedDriver.vehicle.color} • {selectedDriver.vehicle.year}
+                      {selectedDriver.vehicle?.color} • {selectedDriver.vehicle?.year}
                     </p>
                   </div>
                 </div>
