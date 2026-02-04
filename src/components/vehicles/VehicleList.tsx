@@ -1,21 +1,17 @@
-import { Vehicle } from '@/types';
+import { Vehicle, VehicleStatus } from '@/types';
 import { VehicleCard } from './VehicleCard';
 import { Car } from 'lucide-react';
 
 interface VehicleListProps {
   vehicles: Vehicle[];
   onEdit: (vehicle: Vehicle) => void;
-  onAssignDriver: (vehicle: Vehicle) => void;
-  onUnassignDriver: (vehicle: Vehicle) => void;
-  onToggleStatus: (id: number, currentStatus: string) => void;
+  onToggleStatus: (id: number, currentStatus: VehicleStatus) => void;
 }
 
-export function VehicleList({ 
-  vehicles, 
-  onEdit, 
-  onAssignDriver,
-  onUnassignDriver,
-  onToggleStatus 
+export function VehicleList({
+  vehicles,
+  onEdit,
+  onToggleStatus
 }: VehicleListProps) {
   if (vehicles.length === 0) {
     return (
@@ -40,8 +36,6 @@ export function VehicleList({
           key={vehicle.id}
           vehicle={vehicle}
           onEdit={onEdit}
-          onAssignDriver={onAssignDriver}
-          onUnassignDriver={onUnassignDriver}
           onToggleStatus={onToggleStatus}
         />
       ))}
