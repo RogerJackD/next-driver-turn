@@ -1,7 +1,8 @@
 'use client';
 
 import { User } from '@/types';
-import { userAdminService } from '@/services/userAdmin.service';
+import { UserStatus } from '@/constants/enums';
+import { userService } from '@/services/users.service';
 import {
   Dialog,
   DialogContent,
@@ -28,8 +29,9 @@ export function ConfirmStatusDialog({
   onConfirm,
   isLoading,
 }: ConfirmStatusDialogProps) {
-  const isActive = user.status === 'active';
-  const roleName = userAdminService.getRoleName(user.role);
+  const isActive = user.status === UserStatus.ACTIVE;
+  const displayName = userService.getDisplayName(user);
+  const roleName = userService.getRoleLabel(user.role);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,12 +45,12 @@ export function ConfirmStatusDialog({
             </div>
           </div>
           <DialogTitle className="text-center">
-            {isActive ? '¿Desactivar usuario?' : '¿Activar usuario?'}
+            {isActive ? '¿Bloquear usuario?' : '¿Activar usuario?'}
           </DialogTitle>
           <DialogDescription className="text-center">
             {isActive ? (
               <>
-                <strong>{user.firstName} {user.lastName}</strong> ({roleName}) será desactivado.
+                <strong>{displayName}</strong> ({roleName}) será bloqueado.
                 <br />
                 <span className="text-sm mt-2 block">
                   No se eliminará, podrás reactivarlo cuando desees.
@@ -56,7 +58,7 @@ export function ConfirmStatusDialog({
               </>
             ) : (
               <>
-                <strong>{user.firstName} {user.lastName}</strong> ({roleName}) será reactivado.
+                <strong>{displayName}</strong> ({roleName}) será reactivado.
                 <br />
                 <span className="text-sm mt-2 block">
                   Podrá volver a usar el sistema normalmente.
@@ -82,7 +84,7 @@ export function ConfirmStatusDialog({
                 Procesando...
               </>
             ) : (
-              <>Confirmar {isActive ? 'desactivación' : 'activación'}</>
+              <>Confirmar {isActive ? 'bloqueo' : 'activación'}</>
             )}
           </Button>
           <Button
