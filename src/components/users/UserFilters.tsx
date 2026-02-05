@@ -3,7 +3,7 @@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, X } from 'lucide-react';
-import { UserStatus, UserRole } from '@/types';
+import { UserStatus, UserRole } from '@/constants/enums';
 
 interface UserFiltersProps {
   searchQuery: string;
@@ -40,7 +40,7 @@ export function UserFilters({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
         <Input
           type="text"
-          placeholder="Buscar por nombre, DNI o email..."
+          placeholder="Buscar por nombre de usuario..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10 pr-10 h-11 bg-white text-gray-900 placeholder:text-gray-500 rounded-xl border-blue-200 focus:border-blue-400"
@@ -74,24 +74,24 @@ export function UserFilters({
           Todos los roles
         </Badge>
         <Badge
-          variant={roleFilter === 1 ? 'default' : 'outline'}
+          variant={roleFilter === UserRole.ADMIN ? 'default' : 'outline'}
           className={`cursor-pointer whitespace-nowrap transition-all ${
-            roleFilter === 1
+            roleFilter === UserRole.ADMIN
               ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
               : 'bg-white/20 text-white border-white/40 hover:bg-white/30'
           }`}
-          onClick={() => onRoleFilterChange(1)}
+          onClick={() => onRoleFilterChange(UserRole.ADMIN)}
         >
           Administradores
         </Badge>
         <Badge
-          variant={roleFilter === 0 ? 'default' : 'outline'}
+          variant={roleFilter === UserRole.DRIVER ? 'default' : 'outline'}
           className={`cursor-pointer whitespace-nowrap transition-all ${
-            roleFilter === 0
+            roleFilter === UserRole.DRIVER
               ? 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
               : 'bg-white/20 text-white border-white/40 hover:bg-white/30'
           }`}
-          onClick={() => onRoleFilterChange(0)}
+          onClick={() => onRoleFilterChange(UserRole.DRIVER)}
         >
           Conductores
         </Badge>
@@ -112,26 +112,37 @@ export function UserFilters({
             Todos
           </Badge>
           <Badge
-            variant={statusFilter === 'active' ? 'default' : 'outline'}
+            variant={statusFilter === UserStatus.ACTIVE ? 'default' : 'outline'}
             className={`cursor-pointer whitespace-nowrap transition-all ${
-              statusFilter === 'active'
+              statusFilter === UserStatus.ACTIVE
                 ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
                 : 'bg-white/20 text-white border-white/40 hover:bg-white/30'
             }`}
-            onClick={() => onStatusFilterChange('active')}
+            onClick={() => onStatusFilterChange(UserStatus.ACTIVE)}
           >
             Activos
           </Badge>
           <Badge
-            variant={statusFilter === 'inactive' ? 'default' : 'outline'}
+            variant={statusFilter === UserStatus.NEW ? 'default' : 'outline'}
             className={`cursor-pointer whitespace-nowrap transition-all ${
-              statusFilter === 'inactive'
-                ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm'
+              statusFilter === UserStatus.NEW
+                ? 'bg-amber-600 text-white hover:bg-amber-700 shadow-sm'
                 : 'bg-white/20 text-white border-white/40 hover:bg-white/30'
             }`}
-            onClick={() => onStatusFilterChange('inactive')}
+            onClick={() => onStatusFilterChange(UserStatus.NEW)}
           >
-            Inactivos
+            Nuevos
+          </Badge>
+          <Badge
+            variant={statusFilter === UserStatus.BLOCKED ? 'default' : 'outline'}
+            className={`cursor-pointer whitespace-nowrap transition-all ${
+              statusFilter === UserStatus.BLOCKED
+                ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                : 'bg-white/20 text-white border-white/40 hover:bg-white/30'
+            }`}
+            onClick={() => onStatusFilterChange(UserStatus.BLOCKED)}
+          >
+            Bloqueados
           </Badge>
         </div>
 
