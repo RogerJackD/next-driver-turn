@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateUserAdminSchema, UpdateUserAdminFormData } from '@/validators/userAdminSchema';
-import { userAdminService } from '@/services/userAdmin.service';
 import { User } from '@/types';
+import { UserRole } from '@/constants/enums';
+import { userService } from '@/services/users.service';
+import { editUserSchema, EditUserFormData } from '@/validators/userSchema';
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Shield, Car } from 'lucide-react';
+import {
+  Loader2,
+  Edit,
+  AlertCircle,
+  CheckCircle2,
+  Car,
+  Shield,
+  User as UserIcon,
+} from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface EditUserDialogProps {
   open: boolean;
@@ -32,6 +42,8 @@ export function EditUserDialog({
   onSuccess,
 }: EditUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -39,43 +51,44 @@ export function EditUserDialog({
     formState: { errors },
     reset,
     setValue,
-    watch,
-  } = useForm<UpdateUserAdminFormData>({
-    resolver: zodResolver(updateUserAdminSchema),
+  } = useForm<EditUserFormData>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      name: '',
+    },
   });
 
-  const selectedRole = watch('role');
-
+  // Cargar datos del usuario cuando se abre el dialog
   useEffect(() => {
-    if (user) {
-      reset({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone || '',
-        idCard: user.idCard,
-        role: user.role,
-      });
+    if (open && user) {
+      setValue('name', user.name);
+      setApiError(null);
+      setSuccessMessage(null);
     }
-  }, [user, reset]);
+  }, [open, user, setValue]);
 
-  const onSubmit = async (data: UpdateUserAdminFormData) => {
+  const onSubmit = async (data: EditUserFormData) => {
     if (!user) return;
 
     setIsLoading(true);
+    setApiError(null);
+    setSuccessMessage(null);
+
     try {
-      await userAdminService.update(user.id, {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone || undefined,
-        idCard: data.idCard,
-        role: data.role as 0 | 1,
-      });
-      onOpenChange(false);
-      onSuccess();
+      await userService.update(user.id, { name: data.name });
+
+      setSuccessMessage('Usuario actualizado exitosamente');
+
+      setTimeout(() => {
+        reset();
+        setSuccessMessage(null);
+        onOpenChange(false);
+        onSuccess();
+      }, 1500);
     } catch (error) {
-      console.error('Error al actualizar usuario:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al actualizar usuario';
+      setApiError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -83,135 +96,136 @@ export function EditUserDialog({
 
   const handleClose = () => {
     reset();
+    setApiError(null);
+    setSuccessMessage(null);
     onOpenChange(false);
   };
 
+  const isAdmin = user?.role === UserRole.ADMIN;
+  const hasDriver = !!user?.driver;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md mx-4 rounded-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Editar Usuario</DialogTitle>
-          <DialogDescription>
-            Modifica los datos del usuario
-          </DialogDescription>
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Edit className="h-5 w-5" />
+            Editar Usuario
+          </DialogTitle>
+          <DialogDescription>Modifica el nombre de usuario</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Selector de Rol */}
+          {/* Información del conductor (solo lectura) */}
           <div className="space-y-2">
-            <Label>Tipo de Usuario *</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={selectedRole === 0 ? 'default' : 'outline'}
-                className={`flex-1 h-12 ${
-                  selectedRole === 0
-                    ? 'bg-green-600 hover:bg-green-700 text-white'
-                    : 'hover:bg-green-50 hover:border-green-300'
-                }`}
-                onClick={() => setValue('role', 0)}
-              >
-                <Car className="w-4 h-4 mr-2" />
-                Conductor
-              </Button>
-              <Button
-                type="button"
-                variant={selectedRole === 1 ? 'default' : 'outline'}
-                className={`flex-1 h-12 ${
-                  selectedRole === 1
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'hover:bg-blue-50 hover:border-blue-300'
-                }`}
-                onClick={() => setValue('role', 1)}
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Administrador
-              </Button>
+            <Label>Conductor</Label>
+            <div
+              className={`p-4 rounded-xl border ${
+                hasDriver
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                {hasDriver ? (
+                  <>
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                      <Car className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-800">
+                        {user?.driver?.firstName} {user?.driver?.lastName}
+                      </p>
+                      <p className="text-sm text-green-600">
+                        DNI: {user?.driver?.idCard}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                      <UserIcon className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-600">
+                        Sin conductor vinculado
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Usuario administrador
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            {errors.role && (
-              <p className="text-sm text-red-600">{errors.role.message}</p>
+          </div>
+
+          {/* Indicador de rol */}
+          <div
+            className={`p-3 rounded-xl border ${
+              isAdmin
+                ? 'bg-blue-50 border-blue-200'
+                : 'bg-green-50 border-green-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {isAdmin ? (
+                <>
+                  <Shield className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">
+                    Rol: Administrador
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Car className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">
+                    Rol: Conductor
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Nombre de usuario (editable) */}
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Nombre de Usuario <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="name"
+              {...register('name')}
+              placeholder="Ingresa el nombre de usuario"
+              className="h-11"
+            />
+            {errors.name && (
+              <p className="text-sm text-red-600">{errors.name.message}</p>
             )}
           </div>
 
-          {/* Nombre */}
-          <div className="space-y-2">
-            <Label htmlFor="firstName">Nombre *</Label>
-            <Input
-              id="firstName"
-              {...register('firstName')}
-              className="h-11"
-              placeholder="Juan"
-            />
-            {errors.firstName && (
-              <p className="text-sm text-red-600">{errors.firstName.message}</p>
-            )}
-          </div>
+          {/* Mensajes de error y éxito */}
+          {apiError && (
+            <Alert variant="destructive" className="rounded-xl">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{apiError}</AlertDescription>
+            </Alert>
+          )}
 
-          {/* Apellido */}
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Apellido *</Label>
-            <Input
-              id="lastName"
-              {...register('lastName')}
-              className="h-11"
-              placeholder="Pérez"
-            />
-            {errors.lastName && (
-              <p className="text-sm text-red-600">{errors.lastName.message}</p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register('email')}
-              className="h-11"
-              placeholder="juan.perez@email.com"
-            />
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email.message}</p>
-            )}
-          </div>
-
-          {/* DNI */}
-          <div className="space-y-2">
-            <Label htmlFor="idCard">DNI *</Label>
-            <Input
-              id="idCard"
-              {...register('idCard')}
-              className="h-11"
-              placeholder="12345678"
-              maxLength={8}
-            />
-            {errors.idCard && (
-              <p className="text-sm text-red-600">{errors.idCard.message}</p>
-            )}
-          </div>
-
-          {/* Teléfono */}
-          <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input
-              id="phone"
-              {...register('phone')}
-              className="h-11"
-              placeholder="912345678"
-              maxLength={9}
-            />
-            {errors.phone && (
-              <p className="text-sm text-red-600">{errors.phone.message}</p>
-            )}
-          </div>
+          {successMessage && (
+            <Alert className="rounded-xl bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Botones */}
           <div className="flex flex-col gap-2 pt-4">
             <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full h-11 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              disabled={isLoading || !!successMessage}
+              className="w-full h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
               {isLoading ? (
                 <>
