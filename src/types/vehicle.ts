@@ -48,7 +48,7 @@ export interface AssignedDriver {
   updatedAt: string;
 }
 
-// Legacy interface for backwards compatibility
+// Interface para asignaciones vehículo-conductor
 export interface VehicleDriver {
   id: number;
   assignmentDate: string;
@@ -58,10 +58,10 @@ export interface VehicleDriver {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
-  userId: number;
+  driverId: number;
   vehicleId: number;
   // Relaciones opcionales
-  user?: User;
+  driver?: AssignedDriver;
   vehicle?: Vehicle;
 }
 
@@ -92,7 +92,7 @@ export interface UpdateVehicleDto {
 }
 
 export interface AssignDriverDto {
-  userId: number;
+  driverId: number;
   vehicleId: number;
   assignmentDate: string; // Format: YYYY-MM-DD
   notes?: string;
