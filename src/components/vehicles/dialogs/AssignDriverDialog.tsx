@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Vehicle, User, AssignDriverDto } from '@/types';
+import { Vehicle, Driver, AssignDriverDto } from '@/types';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Loader2, User as UserIcon, Search } from 'lucide-react';
-import { userService } from '@/services/users.service';
+import { driverService } from '@/services/drivers.service';
 import { Input } from '@/components/ui/input';
 
 interface AssignDriverDialogProps {
@@ -31,8 +31,8 @@ export function AssignDriverDialog({
   vehicle,
   loading = false,
 }: AssignDriverDialogProps) {
-  const [drivers, setDrivers] = useState<User[]>([]);
-  const [filteredDrivers, setFilteredDrivers] = useState<User[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
@@ -58,7 +58,7 @@ export function AssignDriverDialog({
         (driver) =>
           driver.firstName.toLowerCase().includes(query) ||
           driver.lastName.toLowerCase().includes(query) ||
-          driver.email.toLowerCase().includes(query) ||
+          driver.phone.includes(query) ||
           driver.idCard.includes(query)
       );
       setFilteredDrivers(filtered);
@@ -70,12 +70,10 @@ export function AssignDriverDialog({
   const fetchDrivers = async () => {
     try {
       setLoadingDrivers(true);
-      // Obtener solo conductores activos
-      const activeDrivers = await userService.getActive();
-      // Filtrar solo drivers (role 0)
-      const onlyDrivers = activeDrivers.filter(user => user.role === 0);
-      setDrivers(onlyDrivers);
-      setFilteredDrivers(onlyDrivers);
+      // Obtener todos los conductores
+      const allDrivers = await driverService.getAll();
+      setDrivers(allDrivers);
+      setFilteredDrivers(allDrivers);
     } catch (error) {
       console.error('Error al cargar conductores:', error);
     } finally {
@@ -89,7 +87,7 @@ export function AssignDriverDialog({
     if (!selectedDriverId || !vehicle) return;
 
     const data: AssignDriverDto = {
-      userId: selectedDriverId,
+      driverId: selectedDriverId,
       vehicleId: vehicle.id,
       assignmentDate,
       notes: notes.trim() || undefined,
@@ -161,7 +159,7 @@ export function AssignDriverDialog({
                             {driver.firstName} {driver.lastName}
                           </p>
                           <p className="text-sm text-gray-500 truncate">
-                            {driver.email}
+                            Tel: {driver.phone || 'Sin teléfono'}
                           </p>
                           <p className="text-xs text-gray-400">
                             DNI: {driver.idCard}
