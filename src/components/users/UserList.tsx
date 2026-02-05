@@ -5,16 +5,28 @@ import { UserCard } from './UserCard';
 
 interface UserListProps {
   users: User[];
-  onToggleStatus: (id: number, currentStatus: string) => Promise<void>;
-  onRefresh: () => Promise<void>;
+  onEdit: (user: User) => void;
+  onDelete: (user: User) => void;
+  onBlock: (user: User) => void;
+  onUnblock: (user: User) => void;
+  onResetPassword: (user: User) => void;
 }
 
-export function UserList({ users, onToggleStatus, onRefresh }: UserListProps) {
+export function UserList({
+  users,
+  onEdit,
+  onDelete,
+  onBlock,
+  onUnblock,
+  onResetPassword,
+}: UserListProps) {
   if (users.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
         <p className="text-lg">No se encontraron resultados</p>
-        <p className="text-sm mt-2">Intenta cambiar los filtros de búsqueda o agrega nuevos usuarios</p>
+        <p className="text-sm mt-2">
+          Intenta cambiar los filtros de búsqueda o agrega nuevos usuarios
+        </p>
       </div>
     );
   }
@@ -25,8 +37,11 @@ export function UserList({ users, onToggleStatus, onRefresh }: UserListProps) {
         <UserCard
           key={user.id}
           user={user}
-          onToggleStatus={onToggleStatus}
-          onRefresh={onRefresh}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onBlock={onBlock}
+          onUnblock={onUnblock}
+          onResetPassword={onResetPassword}
         />
       ))}
     </div>
