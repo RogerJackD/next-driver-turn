@@ -33,3 +33,13 @@ export enum VehicleStatus {
   INACTIVE = 0,
   ACTIVE = 1,
 }
+
+// Diccionario de Estado de Zona/Paradero
+// 0 : Eliminado
+// 1 : Activo
+// 2 : Inactivo
+export enum VehicleStopStatus {
+  DELETED = 0,
+  ACTIVE = 1,
+  INACTIVE = 2,
+}
