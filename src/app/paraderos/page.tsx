@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { vehicleDriverService } from '@/services/vehicleDriverService';
+import { vehicleDriverService } from '@/services/vehicleDriver.service';
 import { VehicleDriverAssignment } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -105,14 +105,14 @@ export default function Paraderos() {
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-800 text-white px-6 py-6 shadow-lg sticky top-0 z-10">
+      <div className="bg-linear-to-r from-green-600 to-green-800 text-white px-6 py-6 shadow-lg sticky top-0 z-10">
         <div className="max-w-md mx-auto space-y-4">
           <div className="flex items-center gap-3">
             <Button
               onClick={() => router.push('/menu')}
               variant="ghost"
               size="icon"
-              className="h-10 w-10 hover:bg-white/20 text-white flex-shrink-0"
+              className="h-10 w-10 hover:bg-white/20 text-white shrink-0"
             >
               <ArrowLeft className="w-6 h-6" />
             </Button>
@@ -160,13 +160,13 @@ export default function Paraderos() {
 
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 text-lg truncate">
-                      {assignment.user.firstName} {assignment.user.lastName}
+                      {assignment.driver?.firstName} {assignment.driver?.lastName}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                       <Car className="w-4 h-4" />
-                      <span className="font-medium">{assignment.vehicle.licensePlate}</span>
+                      <span className="font-medium">{assignment.vehicle?.licensePlate}</span>
                       <span className="text-gray-400">•</span>
-                      <span className="truncate">{assignment.vehicle.brand} {assignment.vehicle.model}</span>
+                      <span className="truncate">{assignment.vehicle?.brand} {assignment.vehicle?.model}</span>
                     </div>
                   </div>
 
@@ -249,7 +249,7 @@ export default function Paraderos() {
                   <User className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="font-bold text-xl text-gray-900">
-                  {selectedDriver.user.firstName} {selectedDriver.user.lastName}
+                  {selectedDriver.driver?.firstName} {selectedDriver.driver?.lastName}
                 </h3>
               </div>
 
@@ -258,7 +258,7 @@ export default function Paraderos() {
                   <Phone className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-xs text-gray-500">Teléfono</p>
-                    <p className="font-semibold text-gray-900">{selectedDriver.user.phone}</p>
+                    <p className="font-semibold text-gray-900">{selectedDriver.driver?.phone}</p>
                   </div>
                 </div>
 
@@ -266,7 +266,7 @@ export default function Paraderos() {
                   <CreditCard className="w-5 h-5 text-green-600" />
                   <div>
                     <p className="text-xs text-gray-500">DNI</p>
-                    <p className="font-semibold text-gray-900">{selectedDriver.user.idCard}</p>
+                    <p className="font-semibold text-gray-900">{selectedDriver.driver?.idCard}</p>
                   </div>
                 </div>
 
@@ -275,10 +275,10 @@ export default function Paraderos() {
                   <div>
                     <p className="text-xs text-gray-500">Vehículo</p>
                     <p className="font-semibold text-gray-900">
-                      {selectedDriver.vehicle.licensePlate} - {selectedDriver.vehicle.brand} {selectedDriver.vehicle.model}
+                      {selectedDriver.vehicle?.licensePlate} - {selectedDriver.vehicle?.brand} {selectedDriver.vehicle?.model}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {selectedDriver.vehicle.color} • {selectedDriver.vehicle.year}
+                      {selectedDriver.vehicle?.color} • {selectedDriver.vehicle?.year}
                     </p>
                   </div>
                 </div>
