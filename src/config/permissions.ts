@@ -18,6 +18,7 @@ export type Permission =
   | 'menu:mis-reportes'
   | 'menu:perfil'
   | 'menu:zonas'
+  | 'menu:gestion-zonas'
   | 'menu:conductores'
   | 'menu:vehiculos'
   | 'menu:usuarios'
@@ -25,6 +26,7 @@ export type Permission =
   | 'page:vehiculos'
   | 'page:usuarios'
   | 'page:paraderos'
+  | 'page:zonas'
   | 'page:reportes'
   | 'page:mis-reportes';
 
@@ -44,6 +46,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'menu:reportes',
     'menu:perfil',
     'menu:zonas',
+    'menu:gestion-zonas',
     'menu:conductores',
     'menu:vehiculos',
     'menu:usuarios',
@@ -51,6 +54,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'page:vehiculos',
     'page:usuarios',
     'page:paraderos',
+    'page:zonas',
     'page:reportes',
   ],
 };
