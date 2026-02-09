@@ -50,7 +50,6 @@ export default function Paraderos() {
     enterQueue,
     exitQueue,
     changeStop,
-    refreshMyPosition,
   } = useQueueSocket();
 
   const currentZone = zones[currentZoneIndex] ?? null;
@@ -66,13 +65,6 @@ export default function Paraderos() {
     }
     loadZones();
   }, [router]);
-
-  // When socket connects, check my position
-  useEffect(() => {
-    if (isConnected) {
-      refreshMyPosition();
-    }
-  }, [isConnected, refreshMyPosition]);
 
   // When zones load + my position is known, navigate to my zone
   useEffect(() => {
@@ -122,7 +114,12 @@ export default function Paraderos() {
     try {
       const response = await enterQueue(currentZone.id);
       if (!response.success) {
-        alert(response.message || 'Error al ingresar a la cola');
+        // Don't alert if "already in queue" — the hook auto-corrects state
+        const msg = (response.message ?? '').toLowerCase();
+        const isAlreadyInQueue = msg.includes('cola') || msg.includes('already') || msg.includes('ya te encuentras');
+        if (!isAlreadyInQueue) {
+          alert(response.message || 'Error al ingresar a la cola');
+        }
       }
     } catch {
       alert('Error de conexión');
