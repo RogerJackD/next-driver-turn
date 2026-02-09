@@ -55,7 +55,7 @@ export interface MyPositionResponse {
   message?: string;
 }
 
-export type ExitReason = 'service_taken' | 'change_stop' | 'emergency' | 'shift_end';
+export type ExitReason = 'service_taken' | 'service_express' | 'change_stop' | 'emergency' | 'shift_end';
 
 export interface SocketCallbackResponse<T = unknown> {
   success: boolean;

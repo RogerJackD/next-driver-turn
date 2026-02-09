@@ -6,6 +6,7 @@ import { authUtils } from '@/utils/auth';
 import { vehicleStopsService } from '@/services/vehicleStops.service';
 import { useQueueSocket } from '@/hooks/useQueueSocket';
 import { ExitQueueDialog } from '@/components/paraderos/ExitQueueDialog';
+import { ExpressConfirmDialog } from '@/components/paraderos/ExpressConfirmDialog';
 import type { VehicleStop, QueueEntry, ExitReason } from '@/types';
 import { VehicleStopStatus } from '@/constants/enums';
 import { Card } from '@/components/ui/card';
@@ -24,6 +25,7 @@ import {
   ArrowRightLeft,
   Wifi,
   WifiOff,
+  Zap,
 } from 'lucide-react';
 
 export default function Paraderos() {
@@ -39,6 +41,7 @@ export default function Paraderos() {
   const [selectedEntry, setSelectedEntry] = useState<QueueEntry | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+  const [isExpressDialogOpen, setIsExpressDialogOpen] = useState(false);
 
   // Socket
   const {
@@ -133,6 +136,15 @@ export default function Paraderos() {
     const response = await exitQueue(reason);
     if (!response.success) {
       alert(response.message || 'Error al salir de la cola');
+      throw new Error(response.message);
+    }
+  }, [exitQueue]);
+
+  // Express service — direct exit with 'service_express' reason
+  const handleExpress = useCallback(async () => {
+    const response = await exitQueue('service_express');
+    if (!response.success) {
+      alert(response.message || 'Error al tomar expreso');
       throw new Error(response.message);
     }
   }, [exitQueue]);
@@ -340,14 +352,24 @@ export default function Paraderos() {
           )}
 
           {isConnected && positionLoaded && isInCurrentZone && (
-            <Button
-              onClick={() => setIsExitDialogOpen(true)}
-              disabled={actionLoading}
-              className="w-full h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-            >
-              <LogOut className="w-5 h-5" />
-              RETIRAR DE LA COLA
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setIsExitDialogOpen(true)}
+                disabled={actionLoading}
+                className="flex-1 h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+                RETIRAR
+              </Button>
+              <Button
+                onClick={() => setIsExpressDialogOpen(true)}
+                disabled={actionLoading}
+                className="flex-1 h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Zap className="w-5 h-5" />
+                EXPRESO
+              </Button>
+            </div>
           )}
 
           {isConnected && positionLoaded && isInDifferentZone && (
@@ -374,6 +396,14 @@ export default function Paraderos() {
         open={isExitDialogOpen}
         onOpenChange={setIsExitDialogOpen}
         onConfirm={handleExitQueue}
+        zoneName={myPosition?.stop?.name ?? ''}
+      />
+
+      {/* Express Confirm Dialog */}
+      <ExpressConfirmDialog
+        open={isExpressDialogOpen}
+        onOpenChange={setIsExpressDialogOpen}
+        onConfirm={handleExpress}
         zoneName={myPosition?.stop?.name ?? ''}
       />
 
