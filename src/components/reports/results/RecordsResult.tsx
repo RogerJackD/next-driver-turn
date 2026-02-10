@@ -52,6 +52,9 @@ export function RecordsResult({ data, onPageChange }: RecordsResultProps) {
           label: record.registerStatus,
           color: 'bg-gray-100 text-gray-700',
         };
+        const driverName = record.driver
+          ? `${record.driver.firstName} ${record.driver.lastName}`
+          : '-';
 
         return (
           <Card key={record.id} className="p-4">
@@ -59,21 +62,29 @@ export function RecordsResult({ data, onPageChange }: RecordsResultProps) {
               <div className="flex-1 min-w-0 space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-semibold text-gray-900">
-                    {record.driverName}
+                    {driverName}
                   </h3>
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
                     {statusInfo.label}
                   </span>
+                  {record.assignedPosition != null && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                      #{record.assignedPosition}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
                   <div>
                     <span className="font-medium text-gray-700">Placa:</span>{' '}
-                    {record.vehiclePlate}
+                    {record.vehicle?.licensePlate ?? '-'}
+                    {record.vehicle?.internalNumber && (
+                      <span className="text-gray-400 ml-1">({record.vehicle.internalNumber})</span>
+                    )}
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Paradero:</span>{' '}
-                    {record.stopName}
+                    {record.stop?.name ?? '-'}
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Entrada:</span>{' '}
