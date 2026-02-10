@@ -29,25 +29,61 @@ export interface ReportFilters {
 
 // ==================== RESPONSE SHAPES ====================
 
+export interface SummaryWaitTime {
+  avgMinutes: number;
+  totalMinutes: number;
+  minMinutes: number;
+  maxMinutes: number;
+}
+
+export interface SummaryExitReasonEntry {
+  exitReason: string;
+  count: number;
+}
+
 export interface SummaryReport {
   totalRecords: number;
   completed: number;
   cancelled: number;
   waiting: number;
-  avgWaitTimeMinutes: number;
-  expressServices: number;
+  waitTime: SummaryWaitTime;
+  byExitReason: SummaryExitReasonEntry[];
+}
+
+export interface RecordStop {
+  id: number;
+  name: string;
+  address: string;
+}
+
+export interface RecordDriver {
+  id: number;
+  firstName: string;
+  lastName: string;
+  phone: string;
+}
+
+export interface RecordVehicle {
+  id: number;
+  licensePlate: string;
+  brand: string;
+  model: string;
+  color: string;
+  internalNumber: string;
 }
 
 export interface RecordEntry {
   id: number;
-  driverName: string;
-  vehiclePlate: string;
-  stopName: string;
+  assignedPosition: number;
   entryTime: string;
   exitTime: string | null;
-  exitReason: ExitReason | null;
   waitTimeMinutes: number;
   registerStatus: string;
+  exitReason: ExitReason | null;
+  observations: string | null;
+  stop: RecordStop;
+  driver: RecordDriver;
+  vehicle: RecordVehicle;
 }
 
 export interface RecordsMeta {
@@ -65,34 +101,46 @@ export interface RecordsReport {
 export interface ByStopEntry {
   stopId: number;
   stopName: string;
-  totalEntries: number;
+  stopAddress: string;
+  totalRecords: number;
   completed: number;
   cancelled: number;
-  avgWaitTimeMinutes: number;
+  avgWaitMinutes: number;
 }
 
 export interface ByDriverEntry {
   driverId: number;
-  driverName: string;
-  totalServices: number;
-  expressServices: number;
-  avgWaitTimeMinutes: number;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  licensePlate: string;
+  internalNumber: string;
+  totalRecords: number;
+  completed: number;
+  cancelled: number;
+  avgWaitMinutes: number;
 }
 
 export interface ByExitReasonEntry {
-  reason: string;
+  exitReason: string;
   count: number;
-  percentage: number;
+  avgWaitMinutes: number;
 }
 
 export interface HourlyDistributionEntry {
   hour: number;
-  count: number;
+  totalEntries: number;
+  completed: number;
+  avgWaitMinutes: number;
 }
 
 export interface DailyTrendEntry {
   date: string;
-  count: number;
+  totalEntries: number;
+  completed: number;
+  cancelled: number;
+  waiting: number;
+  avgWaitMinutes: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
