@@ -17,3 +17,6 @@ export * from './vehicleStop';
 // Queue types
 export * from './queue';
 
+// Report types
+export * from './report';
+
