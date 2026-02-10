@@ -9,6 +9,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { reportsService } from '@/services/reports.service';
 import { ReportFiltersForm } from '@/components/reports/ReportFiltersForm';
 import { ReportResultRenderer } from '@/components/reports/ReportResultRenderer';
+import { PdfPreviewDialog } from '@/components/reports/PdfPreviewDialog';
 import type { ReportFilters, ReportType, ReportResponse } from '@/types';
 
 export default function ReportesPage() {
@@ -20,6 +21,7 @@ export default function ReportesPage() {
   const [lastFilters, setLastFilters] = useState<ReportFilters | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authUtils.isAuthenticated()) {
@@ -125,16 +127,26 @@ export default function ReportesPage() {
               onPageChange={handlePageChange}
             />
 
-            {/* PDF Button (placeholder) */}
+            {/* PDF Button */}
             <div className="flex justify-center pt-2 pb-6">
               <Button
-                disabled
-                className="bg-amber-500 text-white opacity-60 cursor-not-allowed px-8 h-12 rounded-xl"
+                onClick={() => setIsPdfDialogOpen(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12 rounded-xl"
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Descargar PDF
               </Button>
             </div>
+
+            {/* PDF Preview Dialog */}
+            {lastFilters && (
+              <PdfPreviewDialog
+                open={isPdfDialogOpen}
+                onOpenChange={setIsPdfDialogOpen}
+                reportType={currentReportType}
+                filters={lastFilters}
+              />
+            )}
           </div>
         )}
       </div>
