@@ -22,13 +22,14 @@ export function DailyTrendResult({ data }: DailyTrendResultProps) {
     );
   }
 
-  const maxCount = Math.max(...data.map((entry) => entry.count), 1);
+  const maxCount = Math.max(...data.map((entry) => entry.totalEntries ?? 0), 1);
 
   return (
     <Card className="p-4">
       <div className="space-y-2">
         {data.map((entry) => {
-          const widthPercent = (entry.count / maxCount) * 100;
+          const total = entry.totalEntries ?? 0;
+          const widthPercent = (total / maxCount) * 100;
 
           return (
             <div key={entry.date} className="flex items-center gap-3">
@@ -43,7 +44,7 @@ export function DailyTrendResult({ data }: DailyTrendResultProps) {
                 >
                   {widthPercent > 15 && (
                     <span className="text-xs font-bold text-white">
-                      {entry.count}
+                      {total}
                     </span>
                   )}
                 </div>
@@ -51,9 +52,13 @@ export function DailyTrendResult({ data }: DailyTrendResultProps) {
 
               {widthPercent <= 15 && (
                 <span className="text-sm font-bold text-gray-700 w-10 shrink-0">
-                  {entry.count}
+                  {total}
                 </span>
               )}
+
+              <span className="text-xs text-gray-400 w-16 shrink-0 text-right hidden sm:block">
+                {(entry.avgWaitMinutes ?? 0).toFixed(0)} min
+              </span>
             </div>
           );
         })}
