@@ -37,4 +37,35 @@ export const reportsService = {
       throw error;
     }
   },
+
+  getPdfReport: async (filters: ReportFilters): Promise<{ blob: Blob; filename: string }> => {
+    const params = new URLSearchParams();
+    params.append('reportType', filters.reportType);
+
+    if (filters.vehicleStopId) params.append('vehicleStopId', String(filters.vehicleStopId));
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters.exitReason) params.append('exitReason', filters.exitReason);
+    if (filters.registerStatus) params.append('registerStatus', filters.registerStatus);
+    if (filters.driverId) params.append('driverId', String(filters.driverId));
+
+    const response = await fetch(`${API_BASE_URL}/reports/pdf?${params.toString()}`, {
+      method: 'GET',
+      headers: authUtils.getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.message || `Error ${response.status}`);
+    }
+
+    const blob = await response.blob();
+
+    const disposition = response.headers.get('Content-Disposition');
+    const filename = disposition
+      ? disposition.split('filename="')[1]?.replace('"', '') ?? `reporte-${filters.reportType}.pdf`
+      : `reporte-${filters.reportType}.pdf`;
+
+    return { blob, filename };
+  },
 };
