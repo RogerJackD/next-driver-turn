@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { vehicleStopsService } from '@/services/vehicleStops.service';
 import { zoneSchema, ZoneFormData } from '@/validators/zoneSchema';
+import { useGeocoding } from '@/hooks/useGeocoding';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ import {
   MapPin,
   AlertCircle,
   CheckCircle2,
+  Search,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -37,12 +39,15 @@ export function CreateZoneDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { geocode, isLoading: isGeocoding, error: geocodeError } = useGeocoding();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
+    setValue,
   } = useForm<ZoneFormData>({
     resolver: zodResolver(zoneSchema),
     defaultValues: {
@@ -52,6 +57,27 @@ export function CreateZoneDialog({
       longitude: '',
     },
   });
+
+  const addressValue = watch('address');
+
+  const handleSearchCoordinates = async () => {
+    const address = addressValue?.trim();
+    if (!address) {
+      setApiError('Ingresa una dirección primero');
+      return;
+    }
+
+    setApiError(null);
+    try {
+      const result = await geocode(address);
+      setValue('latitude', result.latitude.toString());
+      setValue('longitude', result.longitude.toString());
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al buscar coordenadas';
+      setApiError(errorMessage);
+    }
+  };
 
   const onSubmit = async (data: ZoneFormData) => {
     setIsLoading(true);
@@ -127,13 +153,34 @@ export function CreateZoneDialog({
             <Input
               id="address"
               {...register('address')}
-              placeholder="Ej: Av. Principal 123"
+              placeholder="Ej: Av. Principal 123, Lima, Perú"
               className="h-11"
             />
             {errors.address && (
               <p className="text-sm text-red-600">{errors.address.message}</p>
             )}
           </div>
+
+          {/* Botón Buscar Coordenadas */}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSearchCoordinates}
+            disabled={!addressValue || isGeocoding || isLoading}
+            className="w-full h-10"
+          >
+            {isGeocoding ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Buscando...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Buscar Coordenadas
+              </>
+            )}
+          </Button>
 
           {/* Latitud y Longitud en una fila */}
           <div className="grid grid-cols-2 gap-3">
