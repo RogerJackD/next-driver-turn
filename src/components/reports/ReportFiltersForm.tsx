@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { reportFiltersSchema, type ReportFiltersFormData } from '@/validators/reportSchema';
-import type { ReportFilters, VehicleStop, Driver } from '@/types';
+import type { ReportFilters, VehicleStop } from '@/types';
 import { vehicleStopsService } from '@/services/vehicleStops.service';
-import { driverService } from '@/services/drivers.service';
 import { Button } from '@/components/ui/button';
+import { DriverSearchInput } from './DriverSearchInput';
 import { Loader2, Search } from 'lucide-react';
 
 const REPORT_TYPE_OPTIONS = [
@@ -41,12 +41,12 @@ interface ReportFiltersFormProps {
 
 export function ReportFiltersForm({ onSubmit, isLoading }: ReportFiltersFormProps) {
   const [stops, setStops] = useState<VehicleStop[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ReportFiltersFormData>({
     resolver: zodResolver(reportFiltersSchema),
@@ -56,7 +56,6 @@ export function ReportFiltersForm({ onSubmit, isLoading }: ReportFiltersFormProp
 
   useEffect(() => {
     vehicleStopsService.getAll().then(setStops).catch(() => {});
-    driverService.getAll().then(setDrivers).catch(() => {});
   }, []);
 
   const processSubmit = (data: ReportFiltersFormData) => {
@@ -123,17 +122,16 @@ export function ReportFiltersForm({ onSubmit, isLoading }: ReportFiltersFormProp
         </select>
       </div>
 
-      {/* Driver */}
+      {/* Driver Search */}
       <div>
         <label className={labelClass}>Conductor</label>
-        <select {...register('driverId')} className={selectClass}>
-          <option value="">Todos</option>
-          {drivers.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.firstName} {d.lastName}
-            </option>
-          ))}
-        </select>
+        <DriverSearchInput
+          onChange={(value) => setValue('driverId', value)}
+          disabled={isLoading}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Busca por nombre, teléfono o placa. Incluye conductores inactivos.
+        </p>
       </div>
 
       {/* Exit Reason */}
