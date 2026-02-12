@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Driver } from '@/types';
-import { UserRole } from '@/constants/enums';
 import { driverService } from '@/services/drivers.service';
 import { userService } from '@/services/users.service';
 import {
@@ -132,15 +131,14 @@ export function CreateUserDialog({
     setSuccessMessage(null);
 
     try {
-      // Si hay conductor seleccionado: enviar role=0 y driverId
-      // Si no hay conductor: no enviar role ni driverId (defaults to ADMIN)
-      const createData: { name: string; driverId?: number; role?: UserRole } = {
+      // Si hay conductor seleccionado: enviar driverId
+      // Si no hay conductor: no enviar driverId (backend asigna el rol automáticamente)
+      const createData: { name: string; driverId?: number } = {
         name: username.trim(),
       };
 
       if (selectedDriver) {
         createData.driverId = selectedDriver.id;
-        createData.role = UserRole.DRIVER;
       }
 
       await userService.create(createData);
