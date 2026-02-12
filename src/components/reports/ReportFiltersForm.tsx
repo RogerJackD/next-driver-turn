@@ -17,7 +17,7 @@ const REPORT_TYPE_OPTIONS = [
   { value: 'by_driver', label: 'Por Conductor' },
   { value: 'by_exit_reason', label: 'Por Motivo de Salida' },
   { value: 'hourly_distribution', label: 'Distribución por Hora' },
-  { value: 'daily_trend', label: 'Tendencia Diaria' },
+  // { value: 'daily_trend', label: 'Tendencia Diaria' },
 ];
 
 const EXIT_REASON_OPTIONS = [
