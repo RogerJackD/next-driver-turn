@@ -10,6 +10,7 @@ import {
   User,
   Settings,
   Power,
+  Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -25,12 +26,14 @@ interface VehicleCardProps {
   vehicle: Vehicle;
   onEdit: (vehicle: Vehicle) => void;
   onToggleStatus: (id: number, currentStatus: VehicleStatus) => void;
+  onDelete?: (vehicle: Vehicle) => void;
 }
 
 export function VehicleCard({
   vehicle,
   onEdit,
   onToggleStatus,
+  onDelete,
 }: VehicleCardProps) {
   const currentAssignment = vehiclesService.getCurrentDriverFromRelations(vehicle);
   const hasDriver = !!currentAssignment?.driver;
@@ -123,6 +126,19 @@ export function VehicleCard({
               <Power className="w-4 h-4 mr-2" />
               {isActive ? 'Desactivar' : 'Reactivar'}
             </DropdownMenuItem>
+
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => onDelete(vehicle)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar vehículo
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
