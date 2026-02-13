@@ -32,7 +32,7 @@ export type Permission =
 
 // Definición de permisos por rol
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  // Conductor (Role 0) - Zonas y sus reportes personales
+  // Conductor (Role 0) - Zonas para estacionarse y sus reportes personales
   [UserRole.DRIVER]: [
     'menu:mis-reportes',
     'menu:perfil',
@@ -41,11 +41,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'page:mis-reportes',
   ],
 
-  // Administrador (Role 1) - Acceso completo
+  // Administrador (Role 1) - Acceso completo de gestión (sin acceso a estacionarse)
   [UserRole.ADMIN]: [
     'menu:reportes',
     'menu:perfil',
-    'menu:zonas',
     'menu:gestion-zonas',
     'menu:conductores',
     'menu:vehiculos',
@@ -53,7 +52,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'page:conductores',
     'page:vehiculos',
     'page:usuarios',
-    'page:paraderos',
     'page:zonas',
     'page:reportes',
   ],
