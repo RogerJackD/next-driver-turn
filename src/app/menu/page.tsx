@@ -79,7 +79,7 @@ export default function Menu() {
     },
     {
       id: 3,
-      title: 'Zonas',
+      title: 'Hacer Parqueo',
       icon: MapPin,
       color: 'from-green-500 to-green-600',
       onClick: () => router.push('/paraderos'),
