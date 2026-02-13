@@ -79,7 +79,8 @@ export interface CreateVehicleDto {
   year: number;
   color?: string;
   internalNumber?: string;
-  driverIds?: number[]; // Array de IDs de conductores (el último es el activo)
+  driverIds?: number[]; // Array de IDs de conductores
+  activeDriverId?: number | null; // ID del conductor activo, null = ninguno, undefined = último
 }
 
 export interface UpdateVehicleDto {
@@ -88,7 +89,8 @@ export interface UpdateVehicleDto {
   model?: string;
   year?: number;
   color?: string;
-  driverIds?: number[]; // Array de IDs de conductores (el último es el activo)
+  driverIds?: number[]; // Array de IDs de conductores
+  activeDriverId?: number | null; // ID del conductor activo, null = ninguno, undefined = último
 }
 
 export interface AssignDriverDto {
