@@ -11,6 +11,7 @@ import { VehicleFilters } from '@/components/vehicles/VehicleFilters';
 import { VehicleList } from '@/components/vehicles/VehicleList';
 import { VehicleFormDialog } from '@/components/vehicles/dialogs/VehicleFormDialog';
 import { ConfirmStatusDialog } from '@/components/vehicles/dialogs/ConfirmStatusDialog';
+import { DeleteVehicleDialog } from '@/components/vehicles/dialogs/DeleteVehicleDialog';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -40,7 +41,9 @@ export default function VehiculosPage() {
   // Estados para diálogos
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [confirmStatusDialogOpen, setConfirmStatusDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Estado para confirmación de cambio de estado
@@ -172,6 +175,29 @@ export default function VehiculosPage() {
     }
   };
 
+  // Handler para eliminar vehículo
+  const handleDeleteClick = (vehicle: Vehicle) => {
+    setVehicleToDelete(vehicle);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!vehicleToDelete) return;
+
+    try {
+      setActionLoading(true);
+      await vehiclesService.deletePermanent(vehicleToDelete.id);
+      await fetchVehicles();
+      setDeleteDialogOpen(false);
+      setVehicleToDelete(null);
+    } catch (error) {
+      console.error('Error al eliminar vehículo:', error);
+      throw error;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Handler unificado para formulario de vehículo
   const handleVehicleFormSubmit = async (data: CreateVehicleDto | UpdateVehicleDto) => {
     if (selectedVehicle) {
@@ -226,6 +252,7 @@ export default function VehiculosPage() {
           vehicles={vehicles}
           onEdit={handleEditClick}
           onToggleStatus={handleToggleStatusClick}
+          onDelete={handleDeleteClick}
         />
       </div>
 
@@ -265,6 +292,17 @@ export default function VehiculosPage() {
           loading={actionLoading}
         />
       )}
+
+      <DeleteVehicleDialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setVehicleToDelete(null);
+        }}
+        vehicle={vehicleToDelete}
+        onConfirm={handleConfirmDelete}
+        loading={actionLoading}
+      />
     </div>
   );
 }

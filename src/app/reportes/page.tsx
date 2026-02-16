@@ -1,32 +1,74 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authUtils } from '@/utils/auth';
 import { usePermissions } from '@/hooks/usePermissions';
+import { reportsService } from '@/services/reports.service';
+import { ReportFiltersForm } from '@/components/reports/ReportFiltersForm';
+import { ReportResultRenderer } from '@/components/reports/ReportResultRenderer';
+import { PdfPreviewDialog } from '@/components/reports/PdfPreviewDialog';
+import type { ReportFilters, ReportType, ReportResponse } from '@/types';
 
 export default function ReportesPage() {
   const router = useRouter();
-  const { isAdmin, isLoading } = usePermissions();
+  const { isAdmin, isLoading: permLoading } = usePermissions();
+
+  const [results, setResults] = useState<ReportResponse | null>(null);
+  const [currentReportType, setCurrentReportType] = useState<ReportType | null>(null);
+  const [lastFilters, setLastFilters] = useState<ReportFilters | null>(null);
+  const [isLoadingReport, setIsLoadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [isPdfDialogOpen, setIsPdfDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authUtils.isAuthenticated()) {
       router.push('/login');
       return;
     }
-
-    // Si no es admin, redirigir a mis-reportes
-    if (!isLoading && !isAdmin) {
+    if (!permLoading && !isAdmin) {
       router.push('/mis-reportes');
     }
-  }, [router, isAdmin, isLoading]);
+  }, [router, isAdmin, permLoading]);
 
-  if (isLoading) {
+  const handleGenerateReport = useCallback(async (filters: ReportFilters) => {
+    setIsLoadingReport(true);
+    setReportError(null);
+    setResults(null);
+    setLastFilters(filters);
+    setCurrentReportType(filters.reportType);
+    try {
+      const data = await reportsService.getReport(filters);
+      setResults(data);
+    } catch (error) {
+      setReportError(error instanceof Error ? error.message : 'Error al generar reporte');
+    } finally {
+      setIsLoadingReport(false);
+    }
+  }, []);
+
+  const handlePageChange = useCallback(async (page: number) => {
+    if (!lastFilters) return;
+    const newFilters = { ...lastFilters, page };
+    setIsLoadingReport(true);
+    setReportError(null);
+    setLastFilters(newFilters);
+    try {
+      const data = await reportsService.getReport(newFilters);
+      setResults(data);
+    } catch (error) {
+      setReportError(error instanceof Error ? error.message : 'Error al cambiar página');
+    } finally {
+      setIsLoadingReport(false);
+    }
+  }, [lastFilters]);
+
+  if (permLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -52,18 +94,61 @@ export default function ReportesPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FileText className="w-10 h-10 text-blue-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Reportes del Sistema
-          </h2>
-          <p className="text-gray-500">
-            Próximamente podrás ver reportes globales del sistema aquí.
-          </p>
+      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+        {/* Filters Form */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <ReportFiltersForm onSubmit={handleGenerateReport} isLoading={isLoadingReport} />
         </div>
+
+        {/* Loading */}
+        {isLoadingReport && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        )}
+
+        {/* Error */}
+        {reportError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">Error al generar reporte</p>
+              <p className="text-sm text-red-600">{reportError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Results */}
+        {!isLoadingReport && results && currentReportType && (
+          <div className="space-y-6">
+            <ReportResultRenderer
+              reportType={currentReportType}
+              data={results}
+              onPageChange={handlePageChange}
+            />
+
+            {/* PDF Button */}
+            <div className="flex justify-center pt-2 pb-6">
+              <Button
+                onClick={() => setIsPdfDialogOpen(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-white px-8 h-12 rounded-xl"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Descargar PDF
+              </Button>
+            </div>
+
+            {/* PDF Preview Dialog */}
+            {lastFilters && (
+              <PdfPreviewDialog
+                open={isPdfDialogOpen}
+                onOpenChange={setIsPdfDialogOpen}
+                reportType={currentReportType}
+                filters={lastFilters}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

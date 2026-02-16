@@ -28,7 +28,9 @@ import {
   Crown,
   AlertTriangle,
   CheckCircle2,
-  History
+  History,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -82,6 +84,7 @@ export function VehicleFormDialog({
   const [searchResults, setSearchResults] = useState<Driver[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [selectedDrivers, setSelectedDrivers] = useState<SelectedDriver[]>([]);
+  const [activeDriverId, setActiveDriverId] = useState<number | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Confirmation dialogs
@@ -120,6 +123,7 @@ export function VehicleFormDialog({
           color: '',
         });
         setSelectedDrivers([]);
+        setActiveDriverId(null);
       }
     }
   }, [vehicle, open, reset]);
@@ -130,21 +134,19 @@ export function VehicleFormDialog({
     try {
       const history = await vehiclesService.getAssignmentHistory(vehicleId);
 
-      // Convert history to SelectedDriver format
-      // Sort: inactive first (historical), active last
-      const sortedHistory = [...history].sort((a, b) => {
-        if (a.status === 1 && b.status !== 1) return 1; // Active goes last
-        if (a.status !== 1 && b.status === 1) return -1;
-        return 0;
-      });
-
-      // Remove duplicates (keep only unique driver IDs, preferring the active one)
+      // Remove duplicates (keep only unique driver IDs)
       const uniqueDrivers = new Map<number, SelectedDriver>();
+      let currentActiveDriverId: number | null = null;
 
-      sortedHistory.forEach(assignment => {
+      history.forEach(assignment => {
         if (assignment.driver) {
-          // If driver not in map, or this is the active assignment, add/update
-          if (!uniqueDrivers.has(assignment.driver.id) || assignment.status === 1) {
+          // Track which driver is currently active
+          if (assignment.status === 1) {
+            currentActiveDriverId = assignment.driver.id;
+          }
+
+          // Add driver to map if not already there
+          if (!uniqueDrivers.has(assignment.driver.id)) {
             uniqueDrivers.set(assignment.driver.id, {
               id: assignment.driver.id,
               idCard: assignment.driver.idCard,
@@ -156,38 +158,22 @@ export function VehicleFormDialog({
         }
       });
 
-      // Convert map to array, ensuring active driver is last
-      const drivers: SelectedDriver[] = [];
-      let activeDriver: SelectedDriver | null = null;
-
-      sortedHistory.forEach(assignment => {
-        if (assignment.driver && uniqueDrivers.has(assignment.driver.id)) {
-          const driver = uniqueDrivers.get(assignment.driver.id)!;
-          if (assignment.status === 1) {
-            activeDriver = driver;
-          } else if (!drivers.some(d => d.id === driver.id)) {
-            drivers.push(driver);
-          }
-          uniqueDrivers.delete(assignment.driver.id);
-        }
-      });
-
-      // Add active driver at the end
-      if (activeDriver) {
-        drivers.push(activeDriver);
-      }
+      // Convert map to array
+      const drivers = Array.from(uniqueDrivers.values());
 
       setSelectedDrivers(drivers);
+      setActiveDriverId(currentActiveDriverId);
     } catch (error) {
       console.error('Error loading assignment history:', error);
       setSelectedDrivers([]);
+      setActiveDriverId(null);
     } finally {
       setIsLoadingHistory(false);
     }
   };
 
   // Debounced driver search
-  const searchDrivers = useCallback(async (query: string) => {
+  const searchDrivers = async (query: string) => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([]);
       setShowSearchResults(false);
@@ -209,7 +195,7 @@ export function VehicleFormDialog({
     } finally {
       setIsSearchingDrivers(false);
     }
-  }, [selectedDrivers]);
+  };
 
   // Handle search input change with debounce
   useEffect(() => {
@@ -218,10 +204,24 @@ export function VehicleFormDialog({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [driverSearchQuery, searchDrivers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [driverSearchQuery]);
 
   // Add driver to selection
   const handleAddDriver = (driver: Driver) => {
+    // Don't allow adding while history is loading to prevent race conditions
+    if (isLoadingHistory) {
+      return;
+    }
+
+    // Check if driver is already selected
+    if (selectedDrivers.some(sd => sd.id === driver.id)) {
+      setDriverSearchQuery('');
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
     const newDriver: SelectedDriver = {
       id: driver.id,
       idCard: driver.idCard,
@@ -229,10 +229,24 @@ export function VehicleFormDialog({
       lastName: driver.lastName,
       phone: driver.phone,
     };
+
+    // Add to the array (NOT automatically active - user must activate manually)
     setSelectedDrivers(prev => [...prev, newDriver]);
+
+    // Clear search UI
     setDriverSearchQuery('');
     setSearchResults([]);
     setShowSearchResults(false);
+  };
+
+  // Activate a driver
+  const handleActivateDriver = (driverId: number) => {
+    setActiveDriverId(driverId);
+  };
+
+  // Deactivate the current active driver
+  const handleDeactivateDriver = () => {
+    setActiveDriverId(null);
   };
 
   // Remove driver from selection
@@ -242,6 +256,10 @@ export function VehicleFormDialog({
       setShowConfirmRemoveDriver(true);
     } else {
       setSelectedDrivers(prev => prev.filter(d => d.id !== driver.id));
+      // If removing the active driver, deactivate
+      if (activeDriverId === driver.id) {
+        setActiveDriverId(null);
+      }
     }
   };
 
@@ -249,6 +267,10 @@ export function VehicleFormDialog({
   const confirmRemoveDriver = () => {
     if (driverToRemove) {
       setSelectedDrivers(prev => prev.filter(d => d.id !== driverToRemove.id));
+      // If removing the active driver, deactivate
+      if (activeDriverId === driverToRemove.id) {
+        setActiveDriverId(null);
+      }
       setDriverToRemove(null);
       setShowConfirmRemoveDriver(false);
     }
@@ -271,6 +293,7 @@ export function VehicleFormDialog({
       ...data,
       licensePlate: data.licensePlate?.toUpperCase(),
       driverIds: selectedDrivers.length > 0 ? selectedDrivers.map(d => d.id) : undefined,
+      activeDriverId: activeDriverId, // null = ninguno activo, undefined = ultimo activo (default)
     };
 
     try {
@@ -293,6 +316,7 @@ export function VehicleFormDialog({
   const handleClose = () => {
     reset();
     setSelectedDrivers([]);
+    setActiveDriverId(null);
     setDriverSearchQuery('');
     setSearchResults([]);
     setShowSearchResults(false);
@@ -402,7 +426,7 @@ export function VehicleFormDialog({
                   Conductores
                 </Label>
                 <p className="text-sm text-gray-500 mt-1">
-                  Busca y agrega conductores. El <strong>último conductor agregado</strong> será el conductor activo del vehículo.
+                  Busca y agrega conductores al historial. Marca manualmente cuál es el <strong>conductor activo</strong> del vehículo.
                 </p>
               </div>
 
@@ -416,6 +440,7 @@ export function VehicleFormDialog({
                     value={driverSearchQuery}
                     onChange={(e) => setDriverSearchQuery(e.target.value)}
                     className="pl-9 pr-9 h-11"
+                    disabled={isLoadingHistory}
                   />
                   {isSearchingDrivers && (
                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-orange-500" />
@@ -485,12 +510,19 @@ export function VehicleFormDialog({
                     {isEditing && <History className="w-4 h-4" />}
                     {isEditing ? 'Historial de conductores' : 'Conductores seleccionados'} ({selectedDrivers.length})
                   </p>
+                  {!activeDriverId && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <p className="text-xs text-amber-800 font-medium">
+                        ⚠️ Sin conductor activo - Este vehículo no tiene un conductor asignado actualmente
+                      </p>
+                    </div>
+                  )}
                   <div className="space-y-2">
-                    {selectedDrivers.map((driver, index) => {
-                      const isActive = index === selectedDrivers.length - 1;
+                    {selectedDrivers.map((driver) => {
+                      const isActive = driver.id === activeDriverId;
                       return (
                         <div
-                          key={`${driver.id}-${index}`}
+                          key={driver.id}
                           className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                             isActive
                               ? 'bg-orange-50 border-orange-300 ring-1 ring-orange-200'
@@ -525,22 +557,42 @@ export function VehicleFormDialog({
                               DNI: {driver.idCard}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveDriver(driver)}
-                            className="p-1.5 hover:bg-red-100 rounded-full transition-colors shrink-0"
-                          >
-                            <X className="w-4 h-4 text-red-500" />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {isActive ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDeactivateDriver()}
+                                className="p-1.5 hover:bg-amber-100 rounded-full transition-colors"
+                                title="Desactivar conductor"
+                              >
+                                <UserX className="w-4 h-4 text-amber-600" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleActivateDriver(driver.id)}
+                                className="p-1.5 hover:bg-green-100 rounded-full transition-colors"
+                                title="Marcar como conductor activo"
+                              >
+                                <UserCheck className="w-4 h-4 text-green-600" />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDriver(driver)}
+                              className="p-1.5 hover:bg-red-100 rounded-full transition-colors"
+                              title="Remover conductor"
+                            >
+                              <X className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                  {selectedDrivers.length > 1 && (
-                    <p className="text-xs text-gray-500 italic">
-                      * Los conductores anteriores quedarán como historial (inactivos)
-                    </p>
-                  )}
+                  <p className="text-xs text-gray-500 italic">
+                    * Usa los botones <UserCheck className="w-3 h-3 inline text-green-600" /> para marcar el conductor activo o <UserX className="w-3 h-3 inline text-amber-600" /> para desactivar
+                  </p>
                 </div>
               )}
 
@@ -614,15 +666,19 @@ export function VehicleFormDialog({
               {selectedDrivers.length > 0 && (
                 <>
                   <br /><br />
-                  <strong>Cambios en conductores:</strong>
+                  <strong>Estado de conductores:</strong>
                   <br />
-                  {selectedDrivers.length === 1 ? (
-                    <>El conductor <strong>{selectedDrivers[0].firstName} {selectedDrivers[0].lastName}</strong> será el conductor activo.</>
+                  {activeDriverId ? (
+                    <>
+                      Conductor activo: <strong>{selectedDrivers.find(d => d.id === activeDriverId)?.firstName} {selectedDrivers.find(d => d.id === activeDriverId)?.lastName}</strong>
+                      <br />
+                      {selectedDrivers.length > 1 && `Conductores en historial: ${selectedDrivers.length - 1}`}
+                    </>
                   ) : (
                     <>
-                      <strong>{selectedDrivers[selectedDrivers.length - 1].firstName} {selectedDrivers[selectedDrivers.length - 1].lastName}</strong> será el nuevo conductor activo.
+                      ⚠️ Este vehículo NO tendrá conductor activo.
                       <br />
-                      Los demás conductores ({selectedDrivers.length - 1}) quedarán como historial.
+                      Todos los conductores ({selectedDrivers.length}) quedarán como historial.
                     </>
                   )}
                 </>

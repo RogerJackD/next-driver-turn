@@ -203,7 +203,7 @@ export const vehiclesService = {
   },
 
   /**
-   * Desactivar un vehículo
+   * Desactivar un vehículo (status = INACTIVE)
    */
   remove: async (id: number): Promise<{ message: string; vehicle: Vehicle }> => {
     try {
@@ -220,6 +220,28 @@ export const vehiclesService = {
       return await response.json();
     } catch (error) {
       console.error(`Error removing vehicle ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Eliminar permanentemente un vehículo (status = DELETED)
+   */
+  deletePermanent: async (id: number): Promise<{ message: string; vehicle: Vehicle }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/vehicles/${id}/permanent`, {
+        method: 'DELETE',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Error permanently deleting vehicle ${id}:`, error);
       throw error;
     }
   },

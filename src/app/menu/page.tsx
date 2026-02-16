@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, User, MapPin, LogOut, UserCog, Car, Users, LucideIcon } from 'lucide-react';
+import { FileText, User, MapPin, LogOut, UserCog, Car, Users, Settings, LucideIcon } from 'lucide-react';
 import { authUtils } from '@/utils/auth';
 import { ChangePasswordDialog } from '@/components/auth/ChangePasswordDialog';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -79,7 +79,7 @@ export default function Menu() {
     },
     {
       id: 3,
-      title: 'Zonas',
+      title: 'Hacer Parqueo',
       icon: MapPin,
       color: 'from-green-500 to-green-600',
       onClick: () => router.push('/paraderos'),
@@ -108,6 +108,14 @@ export default function Menu() {
       color: 'from-indigo-500 to-indigo-600',
       onClick: () => router.push('/usuarios'),
       permission: 'menu:usuarios',
+    },
+    {
+      id: 8,
+      title: 'Gestión Zonas',
+      icon: Settings,
+      color: 'from-emerald-500 to-emerald-600',
+      onClick: () => router.push('/zonas'),
+      permission: 'menu:gestion-zonas',
     },
   ];
 

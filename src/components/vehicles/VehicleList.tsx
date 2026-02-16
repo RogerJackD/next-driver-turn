@@ -6,12 +6,14 @@ interface VehicleListProps {
   vehicles: Vehicle[];
   onEdit: (vehicle: Vehicle) => void;
   onToggleStatus: (id: number, currentStatus: VehicleStatus) => void;
+  onDelete?: (vehicle: Vehicle) => void;
 }
 
 export function VehicleList({
   vehicles,
   onEdit,
-  onToggleStatus
+  onToggleStatus,
+  onDelete
 }: VehicleListProps) {
   if (vehicles.length === 0) {
     return (
@@ -37,6 +39,7 @@ export function VehicleList({
           vehicle={vehicle}
           onEdit={onEdit}
           onToggleStatus={onToggleStatus}
+          onDelete={onDelete}
         />
       ))}
     </div>
