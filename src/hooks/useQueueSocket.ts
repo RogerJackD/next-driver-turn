@@ -242,14 +242,19 @@ export function useQueueSocket() {
           // DON'T call refreshMyPosition — it's broken and overwrites good state
         } else {
           // Auto-correct: if backend says "already in queue"
+          // Be specific to avoid false positives (e.g. "no puedes entrar a la cola sin vehículo")
           const msg = (typeof message === 'string' ? message : '').toLowerCase();
-          if (msg.includes('cola') || msg.includes('already') || msg.includes('ya te encuentras')) {
+          const isAlreadyInQueue =
+            msg.includes('ya te encuentras') ||
+            msg.includes('already in') ||
+            msg.includes('ya estás en la cola') ||
+            msg.includes('ya se encuentra en');
+          if (isAlreadyInQueue) {
             setMyPosition({
               inQueue: true,
               stop: { id: vehicleStopId, name: '', address: '' },
             });
             setPositionLoaded(true);
-            // DON'T call refreshMyPosition
           }
         }
         resolve({ success, message });
