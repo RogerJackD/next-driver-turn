@@ -74,7 +74,7 @@ export default function Menu() {
       title: 'Mi Perfil',
       icon: User,
       color: 'from-purple-500 to-purple-600',
-      onClick: () => console.log('Perfil clicked'),
+      onClick: () => router.push('/mi-perfil'),
       permission: 'menu:perfil',
     },
     {
