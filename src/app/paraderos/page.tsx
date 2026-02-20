@@ -11,6 +11,7 @@ import type { VehicleStop, QueueEntry, ExitReason } from '@/types';
 import { VehicleStopStatus } from '@/constants/enums';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import {
   User,
@@ -26,6 +27,7 @@ import {
   Wifi,
   WifiOff,
   Zap,
+  AlertCircle,
 } from 'lucide-react';
 
 export default function Paraderos() {
@@ -36,6 +38,7 @@ export default function Paraderos() {
   const [currentZoneIndex, setCurrentZoneIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Dialog states
   const [selectedEntry, setSelectedEntry] = useState<QueueEntry | null>(null);
@@ -100,10 +103,6 @@ export default function Paraderos() {
     }
   };
 
-  const toggleParadero = () => {
-    if (zones.length <= 1) return;
-    setCurrentZoneIndex((prev) => (prev + 1) % zones.length);
-  };
 
   const handleEntryClick = (entry: QueueEntry) => {
     setSelectedEntry(entry);
@@ -114,18 +113,23 @@ export default function Paraderos() {
   const handleEnterQueue = useCallback(async () => {
     if (!currentZone) return;
     setActionLoading(true);
+    setActionError(null);
     try {
       const response = await enterQueue(currentZone.id);
       if (!response.success) {
-        // Don't alert if "already in queue" — the hook auto-corrects state
+        // Don't show error if "already in queue" — the hook auto-corrects state
         const msg = (response.message ?? '').toLowerCase();
-        const isAlreadyInQueue = msg.includes('cola') || msg.includes('already') || msg.includes('ya te encuentras');
+        const isAlreadyInQueue =
+          msg.includes('ya te encuentras') ||
+          msg.includes('already in') ||
+          msg.includes('ya estás en la cola') ||
+          msg.includes('ya se encuentra en');
         if (!isAlreadyInQueue) {
-          alert(response.message || 'Error al ingresar a la cola');
+          setActionError(response.message || 'Error al ingresar a la cola');
         }
       }
     } catch {
-      alert('Error de conexión');
+      setActionError('Error de conexión');
     } finally {
       setActionLoading(false);
     }
@@ -133,18 +137,20 @@ export default function Paraderos() {
 
   // Exit queue via dialog
   const handleExitQueue = useCallback(async (reason: ExitReason) => {
+    setActionError(null);
     const response = await exitQueue(reason);
     if (!response.success) {
-      alert(response.message || 'Error al salir de la cola');
+      setActionError(response.message || 'Error al salir de la cola');
       throw new Error(response.message);
     }
   }, [exitQueue]);
 
   // Express service — direct exit with 'service_express' reason
   const handleExpress = useCallback(async () => {
+    setActionError(null);
     const response = await exitQueue('service_express');
     if (!response.success) {
-      alert(response.message || 'Error al tomar expreso');
+      setActionError(response.message || 'Error al tomar expreso');
       throw new Error(response.message);
     }
   }, [exitQueue]);
@@ -153,13 +159,14 @@ export default function Paraderos() {
   const handleChangeStop = useCallback(async () => {
     if (!currentZone) return;
     setActionLoading(true);
+    setActionError(null);
     try {
       const response = await changeStop(currentZone.id);
       if (!response.success) {
-        alert(response.message || 'Error al cambiar de paradero');
+        setActionError(response.message || 'Error al cambiar de paradero');
       }
     } catch {
-      alert('Error de conexión');
+      setActionError('Error de conexión');
     } finally {
       setActionLoading(false);
     }
@@ -209,15 +216,39 @@ export default function Paraderos() {
           </div>
 
           {/* Zone selector */}
-          <Button
-            onClick={toggleParadero}
-            disabled={zones.length <= 1}
-            className="w-full h-12 bg-white hover:bg-gray-50 text-gray-900 font-bold rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+          <Select
+            value={String(currentZoneIndex)}
+            onValueChange={(val) => setCurrentZoneIndex(Number(val))}
           >
-            <MapPin className="w-5 h-5" />
-            <span>{currentZone?.name ?? 'Sin zonas'}</span>
-            {zones.length > 1 && <ArrowRight className="w-4 h-4 ml-1" />}
-          </Button>
+            <SelectTrigger className="w-full h-12 bg-white text-gray-900 font-bold rounded-xl shadow-lg border-0 px-4 text-sm">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-green-600 shrink-0" />
+                <SelectValue placeholder="Seleccionar paradero" />
+              </div>
+            </SelectTrigger>
+            <SelectContent position="popper" className="rounded-xl">
+              {zones.length === 0 ? (
+                <SelectItem value="-1" disabled>Sin paraderos</SelectItem>
+              ) : (
+                zones.map((zone, index) => {
+                  const isMyZone = isInQueue && myPosition?.stop?.id === zone.id;
+                  return (
+                    <SelectItem key={zone.id} value={String(index)} className="py-2.5 text-sm">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="font-medium">{zone.name}</span>
+                        {isMyZone && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold ml-1">
+                            Tu cola
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })
+              )}
+            </SelectContent>
+          </Select>
 
           {/* My position banner */}
           {isInQueue && myPosition?.stop && (
@@ -225,7 +256,7 @@ export default function Paraderos() {
               {isInCurrentZone ? (
                 <span>
                   Estás en posición <span className="font-bold">{myPosition.position}</span> de{' '}
-                  <span className="font-bold">{myPosition.totalInQueue}</span>
+                  <span className="font-bold">{myPosition.totalInQueue ?? totalVehicles}</span>
                 </span>
               ) : (
                 <span>
@@ -323,7 +354,14 @@ export default function Paraderos() {
 
       {/* Bottom Action Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-10">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-auto space-y-2">
+          {/* Error message */}
+          {actionError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{actionError}</p>
+            </div>
+          )}
           {(!isConnected || !positionLoaded) && (
             <Button
               disabled

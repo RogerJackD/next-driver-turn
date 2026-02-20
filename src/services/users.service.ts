@@ -1,4 +1,4 @@
-import { User, CreateUserDto, UpdateUserDto, ChangePasswordDto, SearchUsersParams } from '@/types';
+import { User, UserProfile, CreateUserDto, UpdateUserDto, UpdateProfileDto, ChangePasswordDto, SearchUsersParams } from '@/types';
 import { UserStatus, UserRole } from '@/constants/enums';
 import { authUtils } from '@/utils/auth';
 
@@ -206,9 +206,9 @@ export const userService = {
   /**
    * Obtener perfil del usuario actual
    */
-  getMyProfile: async (): Promise<User> => {
+  getMyProfile: async (): Promise<UserProfile> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/me`, {
+      const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
         method: 'GET',
         headers: authUtils.getAuthHeaders(),
       });
@@ -221,6 +221,27 @@ export const userService = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching my profile:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualizar perfil del usuario actual (contraseña y/o teléfono)
+   */
+  updateMyProfile: async (data: UpdateProfileDto): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
+        method: 'PATCH',
+        headers: authUtils.getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
       throw error;
     }
   },
