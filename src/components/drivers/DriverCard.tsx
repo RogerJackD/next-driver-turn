@@ -1,6 +1,7 @@
 'use client';
 
 import { Driver } from '@/types';
+import { DriverStatus } from '@/constants/enums';
 import { driverService } from '@/services/drivers.service';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,25 +9,39 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Phone, CreditCard, Car, CircleSlash, MoreVertical, Pencil } from 'lucide-react';
+import { Phone, CreditCard, Car, CircleSlash, MoreVertical, Pencil, Power, Trash2 } from 'lucide-react';
 
 interface DriverCardProps {
   driver: Driver;
   onEdit: (driver: Driver) => void;
+  onToggleStatus?: (driver: Driver) => void;
+  onDelete?: (driver: Driver) => void;
 }
 
-export function DriverCard({ driver, onEdit }: DriverCardProps) {
+export function DriverCard({ driver, onEdit, onToggleStatus, onDelete }: DriverCardProps) {
   const vehicle = driverService.getVehicle(driver);
   const hasVehicle = !!vehicle;
+  const isActive = driver.status === DriverStatus.ACTIVE;
 
   return (
-    <Card className={`p-4 border-l-4 ${hasVehicle ? 'border-l-green-500 bg-white' : 'border-l-gray-300 bg-gray-50'}`}>
+    <Card className={`p-4 border-l-4 ${
+      !isActive
+        ? 'border-l-gray-400 bg-gray-50 opacity-75'
+        : hasVehicle
+          ? 'border-l-green-500 bg-white'
+          : 'border-l-gray-300 bg-white'
+    }`}>
       <div className="flex items-start gap-3">
         {/* Avatar */}
         <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 font-bold text-white ${
-          hasVehicle ? 'bg-gradient-to-br from-orange-500 to-orange-600' : 'bg-gray-400'
+          !isActive
+            ? 'bg-gray-400'
+            : hasVehicle
+              ? 'bg-gradient-to-br from-orange-500 to-orange-600'
+              : 'bg-gray-400'
         }`}>
           {driver.firstName.charAt(0)}{driver.lastName.charAt(0)}
         </div>
@@ -37,6 +52,11 @@ export function DriverCard({ driver, onEdit }: DriverCardProps) {
             <h3 className="font-semibold text-gray-900 truncate">
               {driver.firstName} {driver.lastName}
             </h3>
+            {!isActive && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-200 text-gray-600">
+                Inactivo
+              </span>
+            )}
           </div>
 
           <div className="space-y-1 text-sm text-gray-600">
@@ -77,7 +97,7 @@ export function DriverCard({ driver, onEdit }: DriverCardProps) {
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
                 onClick={() => onEdit(driver)}
                 className="cursor-pointer"
@@ -85,6 +105,32 @@ export function DriverCard({ driver, onEdit }: DriverCardProps) {
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </DropdownMenuItem>
+
+              {onToggleStatus && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onToggleStatus(driver)}
+                    className={`cursor-pointer ${isActive ? 'text-red-600' : 'text-green-600'}`}
+                  >
+                    <Power className="mr-2 h-4 w-4" />
+                    {isActive ? 'Desactivar' : 'Activar'}
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(driver)}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

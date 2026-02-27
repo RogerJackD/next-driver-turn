@@ -118,6 +118,72 @@ export const driverService = {
   },
 
   /**
+   * Activar un conductor
+   */
+  activate: async (id: number): Promise<Driver> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers/${id}/activate`, {
+        method: 'PATCH',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error activating driver:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Desactivar un conductor
+   */
+  deactivate: async (id: number): Promise<Driver> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers/${id}/deactivate`, {
+        method: 'PATCH',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error deactivating driver:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Eliminar un conductor (status = DELETED)
+   */
+  delete: async (id: number): Promise<{ message: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers/${id}`, {
+        method: 'DELETE',
+        headers: authUtils.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting driver:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Obtener nombre completo del conductor
    */
   getFullName: (driver: Driver): string => {

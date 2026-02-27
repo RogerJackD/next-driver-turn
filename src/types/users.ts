@@ -39,6 +39,15 @@ export interface ChangePasswordDto {
   newPassword: string;
 }
 
+export interface UpdateProfileDto {
+  newPassword?: string;
+  phone?: string;
+}
+
+export interface UserProfile extends User {
+  isDriver: boolean;
+}
+
 // ==================== SEARCH/FILTER PARAMS ====================
 
 export interface SearchUsersParams {

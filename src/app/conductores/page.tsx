@@ -7,9 +7,12 @@ import { DriverList } from '@/components/drivers/DriverList';
 import { DriverFilters } from '@/components/drivers/DriverFilters';
 import { CreateDriverDialog } from '@/components/drivers/dialogs/CreateDriverDialog';
 import { EditDriverDialog } from '@/components/drivers/dialogs/EditDriverDialog';
+import { DeleteDriverDialog } from '@/components/drivers/dialogs/DeleteDriverDialog';
+import { ToggleDriverStatusDialog } from '@/components/drivers/dialogs/ToggleDriverStatusDialog';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Driver } from '@/types';
+import { DriverStatus } from '@/constants/enums';
 import { driverService } from '@/services/drivers.service';
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -32,10 +35,13 @@ export default function DriversPage() {
   const router = useRouter();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [toggleStatusDialogOpen, setToggleStatusDialogOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
@@ -91,6 +97,52 @@ export default function DriversPage() {
     setEditDialogOpen(true);
   };
 
+  const handleToggleStatusClick = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setToggleStatusDialogOpen(true);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!selectedDriver) return;
+    try {
+      setActionLoading(true);
+      if (selectedDriver.status === DriverStatus.ACTIVE) {
+        await driverService.deactivate(selectedDriver.id);
+      } else {
+        await driverService.activate(selectedDriver.id);
+      }
+      await fetchDrivers();
+      setToggleStatusDialogOpen(false);
+      setSelectedDriver(null);
+    } catch (error) {
+      console.error('Error toggling driver status:', error);
+      throw error;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDriver) return;
+    try {
+      setActionLoading(true);
+      await driverService.delete(selectedDriver.id);
+      await fetchDrivers();
+      setDeleteDialogOpen(false);
+      setSelectedDriver(null);
+    } catch (error) {
+      console.error('Error deleting driver:', error);
+      throw error;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -131,7 +183,12 @@ export default function DriversPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-6">
-        <DriverList drivers={drivers} onEditDriver={handleEditDriver} />
+        <DriverList
+          drivers={drivers}
+          onEditDriver={handleEditDriver}
+          onToggleStatus={handleToggleStatusClick}
+          onDelete={handleDeleteClick}
+        />
       </div>
 
       {/* Dialog para crear conductor */}
@@ -147,6 +204,24 @@ export default function DriversPage() {
         onOpenChange={setEditDialogOpen}
         driver={selectedDriver}
         onSuccess={fetchDrivers}
+      />
+
+      {/* Dialog para activar/desactivar conductor */}
+      <ToggleDriverStatusDialog
+        open={toggleStatusDialogOpen}
+        onOpenChange={setToggleStatusDialogOpen}
+        driver={selectedDriver}
+        onConfirm={handleConfirmToggleStatus}
+        loading={actionLoading}
+      />
+
+      {/* Dialog para eliminar conductor */}
+      <DeleteDriverDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        driver={selectedDriver}
+        onConfirm={handleConfirmDelete}
+        loading={actionLoading}
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import type { Company } from './company';
+import { DriverStatus } from '@/constants/enums';
 
 // ==================== DRIVER ENTITY ====================
 
@@ -10,6 +11,7 @@ export interface Driver {
   phone: string;
   observation: string | null;
   companyId: number;
+  status: DriverStatus;
   createdAt: string;
   updatedAt: string;
   company?: Company;
