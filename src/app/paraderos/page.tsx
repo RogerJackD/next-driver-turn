@@ -447,7 +447,7 @@ export default function Paraderos() {
 
       {/* Driver Info Modal */}
       <Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
-        <DialogContent className="max-w-sm mx-4 rounded-2xl">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-sm mx-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-center">
               Información del Conductor
