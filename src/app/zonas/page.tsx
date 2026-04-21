@@ -8,8 +8,10 @@ import { ZoneFilters } from '@/components/zones/ZoneFilters';
 import { CreateZoneDialog } from '@/components/zones/dialogs/CreateZoneDialog';
 import { EditZoneDialog } from '@/components/zones/dialogs/EditZoneDialog';
 import { ConfirmStatusDialog } from '@/components/zones/dialogs/ConfirmStatusDialog';
+import { ExpulsionReasonsDialog } from '@/components/zones/dialogs/ExpulsionReasonsDialog';
+import { ExitReasonsDialog } from '@/components/zones/dialogs/ExitReasonsDialog';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, ShieldAlert } from 'lucide-react';
 import { VehicleStop } from '@/types';
 import { vehicleStopsService } from '@/services/vehicleStops.service';
 
@@ -40,6 +42,8 @@ export default function ZonasPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [confirmStatusDialogOpen, setConfirmStatusDialogOpen] = useState(false);
+  const [expulsionReasonsDialogOpen, setExpulsionReasonsDialogOpen] = useState(false);
+  const [exitReasonsDialogOpen, setExitReasonsDialogOpen] = useState(false);
   const [selectedZone, setSelectedZone] = useState<VehicleStop | null>(null);
   const [statusAction, setStatusAction] = useState<'delete' | 'activate' | 'deactivate'>('delete');
 
@@ -51,7 +55,6 @@ export default function ZonasPage() {
       router.push('/login');
       return;
     }
-    // Solo administradores pueden acceder
     if (user?.role !== 1) {
       router.push('/menu');
       return;
@@ -81,13 +84,11 @@ export default function ZonasPage() {
   const handleSearch = useCallback(async () => {
     try {
       setIsSearching(true);
-
       if (!debouncedSearchQuery.trim()) {
         const data = await vehicleStopsService.getAll();
         setZones(data);
         return;
       }
-
       const data = await vehicleStopsService.search(debouncedSearchQuery.trim());
       setZones(data);
     } catch (error) {
@@ -107,7 +108,6 @@ export default function ZonasPage() {
     }
   };
 
-  // Handlers
   const handleEdit = (zone: VehicleStop) => {
     setSelectedZone(zone);
     setEditDialogOpen(true);
@@ -129,6 +129,11 @@ export default function ZonasPage() {
     setSelectedZone(zone);
     setStatusAction('deactivate');
     setConfirmStatusDialogOpen(true);
+  };
+
+  const handleManageExitReasons = (zone: VehicleStop) => {
+    setSelectedZone(zone);
+    setExitReasonsDialogOpen(true);
   };
 
   if (loading) {
@@ -158,6 +163,16 @@ export default function ZonasPage() {
                 Gestión de zonas y paraderos
               </p>
             </div>
+            {/* Botón global de motivos de expulsión */}
+            <Button
+              onClick={() => setExpulsionReasonsDialogOpen(true)}
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 hover:bg-white/20 text-white shrink-0"
+              title="Motivos de expulsión"
+            >
+              <ShieldAlert className="w-5 h-5" />
+            </Button>
           </div>
 
           <ZoneFilters
@@ -176,6 +191,7 @@ export default function ZonasPage() {
           onDelete={handleDelete}
           onActivate={handleActivate}
           onDeactivate={handleDeactivate}
+          onManageExitReasons={handleManageExitReasons}
         />
       </div>
 
@@ -210,6 +226,19 @@ export default function ZonasPage() {
         zone={selectedZone}
         action={statusAction}
         onSuccess={refreshList}
+      />
+
+      {/* Global — motivos de expulsión (por empresa) */}
+      <ExpulsionReasonsDialog
+        open={expulsionReasonsDialogOpen}
+        onOpenChange={setExpulsionReasonsDialogOpen}
+      />
+
+      {/* Por zona — motivos de salida */}
+      <ExitReasonsDialog
+        open={exitReasonsDialogOpen}
+        onOpenChange={setExitReasonsDialogOpen}
+        zone={selectedZone}
       />
     </div>
   );
