@@ -31,3 +31,52 @@ export interface UpdateVehicleStopDto {
   latitude?: number;
   longitude?: number;
 }
+
+// ==================== STOP EXIT REASONS ====================
+
+export interface StopExitReason {
+  id: number;
+  vehicleStopId: number;
+  name: string;
+  requiresTime: boolean;
+  sortOrder: number;
+  status: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExitReasonDto {
+  name: string;
+  requiresTime: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateExitReasonDto {
+  name?: string;
+  requiresTime?: boolean;
+  sortOrder?: number;
+  status?: number;
+}
+
+// ==================== STOP EXPULSION REASONS ====================
+
+export interface StopExpulsionReason {
+  id: number;
+  companyId: number;
+  name: string;
+  sortOrder: number;
+  status: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExpulsionReasonDto {
+  name: string;
+  sortOrder?: number;
+}
+
+export interface UpdateExpulsionReasonDto {
+  name?: string;
+  sortOrder?: number;
+  status?: number;
+}
