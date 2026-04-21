@@ -7,7 +7,6 @@ import type {
   StopQueue,
   QueueUpdatedEvent,
   MyPositionResponse,
-  ExitReason,
   SocketCallbackResponse,
 } from '@/types';
 
@@ -263,7 +262,10 @@ export function useQueueSocket() {
   }, []);
 
   // Exit queue
-  const exitQueue = useCallback((exitReason: ExitReason, observations?: string): Promise<SocketCallbackResponse> => {
+  const exitQueue = useCallback((
+    exitReasonId: number,
+    options?: { observations?: string; scheduledExitTime?: string },
+  ): Promise<SocketCallbackResponse> => {
     return new Promise((resolve) => {
       const socket = socketRef.current;
       if (!socket) {
@@ -272,7 +274,7 @@ export function useQueueSocket() {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      socket.emit('queue:exit', { exitReason, observations }, (response: any) => {
+      socket.emit('queue:exit', { exitReasonId, ...options }, (response: any) => {
         const success = response?.success === true;
         const message = response?.message ?? '';
         if (success) {
