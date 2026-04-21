@@ -10,9 +10,10 @@ interface ZoneListProps {
   onDelete: (zone: VehicleStop) => void;
   onActivate: (zone: VehicleStop) => void;
   onDeactivate: (zone: VehicleStop) => void;
+  onManageExitReasons: (zone: VehicleStop) => void;
 }
 
-export function ZoneList({ zones, onEdit, onDelete, onActivate, onDeactivate }: ZoneListProps) {
+export function ZoneList({ zones, onEdit, onDelete, onActivate, onDeactivate, onManageExitReasons }: ZoneListProps) {
   if (zones.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -35,6 +36,7 @@ export function ZoneList({ zones, onEdit, onDelete, onActivate, onDeactivate }: 
           onDelete={onDelete}
           onActivate={onActivate}
           onDeactivate={onDeactivate}
+          onManageExitReasons={onManageExitReasons}
         />
       ))}
     </div>
