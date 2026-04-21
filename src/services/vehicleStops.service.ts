@@ -1,4 +1,14 @@
-import { VehicleStop, CreateVehicleStopDto, UpdateVehicleStopDto } from '@/types';
+import {
+  VehicleStop,
+  CreateVehicleStopDto,
+  UpdateVehicleStopDto,
+  StopExitReason,
+  CreateExitReasonDto,
+  UpdateExitReasonDto,
+  StopExpulsionReason,
+  CreateExpulsionReasonDto,
+  UpdateExpulsionReasonDto,
+} from '@/types';
 import { VehicleStopStatus } from '@/constants/enums';
 import { authUtils } from '@/utils/auth';
 
@@ -155,6 +165,116 @@ export const vehicleStopsService = {
     } catch (error) {
       console.error(`Error inactivating vehicle stop ${id}:`, error);
       throw error;
+    }
+  },
+
+  // ── Exit Reasons ───────────────────────────────────────────────
+
+  getExitReasons: async (stopId: number): Promise<StopExitReason[]> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/${stopId}/exit-reasons`, {
+      headers: authUtils.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return response.json();
+  },
+
+  getAllExitReasons: async (stopId: number): Promise<StopExitReason[]> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/${stopId}/exit-reasons/all`, {
+      headers: authUtils.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return response.json();
+  },
+
+  createExitReason: async (stopId: number, data: CreateExitReasonDto): Promise<StopExitReason> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/${stopId}/exit-reasons`, {
+      method: 'POST',
+      headers: authUtils.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  updateExitReason: async (stopId: number, reasonId: number, data: UpdateExitReasonDto): Promise<StopExitReason> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/${stopId}/exit-reasons/${reasonId}`, {
+      method: 'PATCH',
+      headers: authUtils.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  deleteExitReason: async (stopId: number, reasonId: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/${stopId}/exit-reasons/${reasonId}`, {
+      method: 'DELETE',
+      headers: authUtils.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Error: ${response.status}`);
+    }
+  },
+
+  // ── Expulsion Reasons ──────────────────────────────────────────
+
+  getExpulsionReasons: async (): Promise<StopExpulsionReason[]> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/expulsion-reasons`, {
+      headers: authUtils.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return response.json();
+  },
+
+  getAllExpulsionReasons: async (): Promise<StopExpulsionReason[]> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/expulsion-reasons/all`, {
+      headers: authUtils.getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error(`Error: ${response.status}`);
+    return response.json();
+  },
+
+  createExpulsionReason: async (data: CreateExpulsionReasonDto): Promise<StopExpulsionReason> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/expulsion-reasons`, {
+      method: 'POST',
+      headers: authUtils.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  updateExpulsionReason: async (reasonId: number, data: UpdateExpulsionReasonDto): Promise<StopExpulsionReason> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/expulsion-reasons/${reasonId}`, {
+      method: 'PATCH',
+      headers: authUtils.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Error: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  deleteExpulsionReason: async (reasonId: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/vehicle-stops/expulsion-reasons/${reasonId}`, {
+      method: 'DELETE',
+      headers: authUtils.getAuthHeaders(),
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || `Error: ${response.status}`);
     }
   },
 
