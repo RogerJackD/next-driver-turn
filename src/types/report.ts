@@ -1,5 +1,3 @@
-import type { ExitReason } from './queue';
-
 // ==================== REPORT TYPES ====================
 
 export type ReportType =
@@ -20,7 +18,7 @@ export interface ReportFilters {
   vehicleStopId?: number;
   dateFrom?: string;
   dateTo?: string;
-  exitReason?: ExitReason;
+  exitReason?: string;
   registerStatus?: RegisterStatus;
   driverId?: number;
   page?: number;
@@ -79,7 +77,7 @@ export interface RecordEntry {
   exitTime: string | null;
   waitTimeMinutes: number;
   registerStatus: string;
-  exitReason: ExitReason | null;
+  exitReason: string | null;
   observations: string | null;
   stop: RecordStop;
   driver: RecordDriver;
