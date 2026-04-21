@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { authUtils } from '@/utils/auth';
 import { vehicleStopsService } from '@/services/vehicleStops.service';
 import { useQueueSocket } from '@/hooks/useQueueSocket';
 import { ExitQueueDialog } from '@/components/paraderos/ExitQueueDialog';
-import { ExpressConfirmDialog } from '@/components/paraderos/ExpressConfirmDialog';
-import type { VehicleStop, QueueEntry, ExitReason } from '@/types';
+import { RemoveDriverDialog } from '@/components/paraderos/RemoveDriverDialog';
+import type { VehicleStop, QueueEntry } from '@/types';
 import { VehicleStopStatus } from '@/constants/enums';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,8 +26,8 @@ import {
   ArrowRightLeft,
   Wifi,
   WifiOff,
-  Zap,
   AlertCircle,
+  UserMinus,
 } from 'lucide-react';
 
 export default function Paraderos() {
@@ -44,7 +44,8 @@ export default function Paraderos() {
   const [selectedEntry, setSelectedEntry] = useState<QueueEntry | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
-  const [isExpressDialogOpen, setIsExpressDialogOpen] = useState(false);
+  const [isRemoveDriverDialogOpen, setIsRemoveDriverDialogOpen] = useState(false);
+  const [driverToRemove, setDriverToRemove] = useState<QueueEntry | null>(null);
 
   // Socket
   const {
@@ -57,6 +58,16 @@ export default function Paraderos() {
     exitQueue,
     changeStop,
   } = useQueueSocket();
+
+  // Queue sound notification
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const suppressSoundUntilRef = useRef<number>(Date.now() + 3000);
+
+  useEffect(() => {
+    if (currentQueue === null) return;
+    if (Date.now() < suppressSoundUntilRef.current) return;
+    audioRef.current?.play().catch(() => {});
+  }, [currentQueue]);
 
   const currentZone = zones[currentZoneIndex] ?? null;
   const isInQueue = myPosition?.inQueue === true;
@@ -85,6 +96,7 @@ export default function Paraderos() {
   // Subscribe to current zone when it changes
   useEffect(() => {
     if (currentZone && isConnected) {
+      suppressSoundUntilRef.current = Date.now() + 2000;
       subscribeToStop(currentZone.id);
     }
   }, [currentZone?.id, isConnected, subscribeToStop]);
@@ -116,7 +128,9 @@ export default function Paraderos() {
     setActionError(null);
     try {
       const response = await enterQueue(currentZone.id);
-      if (!response.success) {
+      if (response.success) {
+        suppressSoundUntilRef.current = Date.now() + 1500;
+      } else {
         // Don't show error if "already in queue" — the hook auto-corrects state
         const msg = (response.message ?? '').toLowerCase();
         const isAlreadyInQueue =
@@ -136,21 +150,11 @@ export default function Paraderos() {
   }, [currentZone, enterQueue]);
 
   // Exit queue via dialog
-  const handleExitQueue = useCallback(async (reason: ExitReason) => {
+  const handleExitQueue = useCallback(async (exitReasonId: number, scheduledExitTime?: string) => {
     setActionError(null);
-    const response = await exitQueue(reason);
+    const response = await exitQueue(exitReasonId, { scheduledExitTime });
     if (!response.success) {
       setActionError(response.message || 'Error al salir de la cola');
-      throw new Error(response.message);
-    }
-  }, [exitQueue]);
-
-  // Express service — direct exit with 'service_express' reason
-  const handleExpress = useCallback(async () => {
-    setActionError(null);
-    const response = await exitQueue('service_express');
-    if (!response.success) {
-      setActionError(response.message || 'Error al tomar expreso');
       throw new Error(response.message);
     }
   }, [exitQueue]);
@@ -342,7 +346,20 @@ export default function Paraderos() {
                     </div>
 
                     {!isMine && (
-                      <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDriverToRemove(entry);
+                            setIsRemoveDriverDialogOpen(true);
+                          }}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 hover:text-red-600 transition-colors"
+                          title="Retirar conductor"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                        <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </div>
                     )}
                   </div>
                 </Card>
@@ -390,24 +407,14 @@ export default function Paraderos() {
           )}
 
           {isConnected && positionLoaded && isInCurrentZone && (
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setIsExitDialogOpen(true)}
-                disabled={actionLoading}
-                className="flex-1 h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-              >
-                <LogOut className="w-5 h-5" />
-                RETIRAR
-              </Button>
-              <Button
-                onClick={() => setIsExpressDialogOpen(true)}
-                disabled={actionLoading}
-                className="flex-1 h-14 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-              >
-                <Zap className="w-5 h-5" />
-                EXPRESO
-              </Button>
-            </div>
+            <Button
+              onClick={() => setIsExitDialogOpen(true)}
+              disabled={actionLoading}
+              className="w-full h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-5 h-5" />
+              SALIR DE LA COLA
+            </Button>
           )}
 
           {isConnected && positionLoaded && isInDifferentZone && (
@@ -435,15 +442,30 @@ export default function Paraderos() {
         onOpenChange={setIsExitDialogOpen}
         onConfirm={handleExitQueue}
         zoneName={myPosition?.stop?.name ?? ''}
+        stopId={myPosition?.stop?.id ?? null}
       />
 
-      {/* Express Confirm Dialog */}
-      <ExpressConfirmDialog
-        open={isExpressDialogOpen}
-        onOpenChange={setIsExpressDialogOpen}
-        onConfirm={handleExpress}
-        zoneName={myPosition?.stop?.name ?? ''}
+      {/* Remove Driver Dialog */}
+      <RemoveDriverDialog
+        open={isRemoveDriverDialogOpen}
+        onOpenChange={(open) => {
+          setIsRemoveDriverDialogOpen(open);
+          if (!open) setDriverToRemove(null);
+        }}
+        driverName={
+          driverToRemove
+            ? `${driverToRemove.driver.firstName} ${driverToRemove.driver.lastName}`
+            : ''
+        }
+        queueId={driverToRemove?.queueId ?? null}
+        onSuccess={() => {
+          setDriverToRemove(null);
+          if (currentQueue?.stopId) subscribeToStop(currentQueue.stopId);
+        }}
       />
+
+      {/* Queue sound notification */}
+      <audio ref={audioRef} src="/sounds/universfield-new-notification-024-370048.mp3" preload="auto" />
 
       {/* Driver Info Modal */}
       <Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
