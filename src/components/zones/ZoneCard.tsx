@@ -28,6 +28,7 @@ interface ZoneCardProps {
   onDelete: (zone: VehicleStop) => void;
   onActivate: (zone: VehicleStop) => void;
   onDeactivate: (zone: VehicleStop) => void;
+  onManageExitReasons: (zone: VehicleStop) => void;
 }
 
 export function ZoneCard({
@@ -36,6 +37,7 @@ export function ZoneCard({
   onDelete,
   onActivate,
   onDeactivate,
+  onManageExitReasons,
 }: ZoneCardProps) {
   const isActive = zone.status === VehicleStopStatus.ACTIVE;
   const isInactive = zone.status === VehicleStopStatus.INACTIVE;
@@ -110,6 +112,15 @@ export function ZoneCard({
             >
               <Edit className="w-4 h-4 mr-2" />
               Editar
+            </DropdownMenuItem>
+
+            {/* Motivos de salida */}
+            <DropdownMenuItem
+              onClick={() => onManageExitReasons(zone)}
+              className="cursor-pointer"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Motivos de salida
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
