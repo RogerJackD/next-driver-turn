@@ -56,6 +56,8 @@ export function useQueueSocket() {
   // Get driverId once from auth
   const user = authUtils.getUser();
   const driverIdRef = useRef(user?.driverId ?? null);
+  // Mirrors myPosition state — always current inside socket handlers (updated each render)
+  const myPositionRef = useRef<MyPositionResponse | null>(null);
 
   const [isConnected, setIsConnected] = useState(false);
   const [currentQueue, setCurrentQueue] = useState<StopQueue | null>(null);
@@ -142,12 +144,17 @@ export function useQueueSocket() {
       setError(data.message);
     });
 
-    // Position events from server — only trust positive (inQueue: true)
+    // Position events from server
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     socket.on('queue:position', (raw: any) => {
       const data = raw?.data ?? raw;
-      if (data && data.inQueue === true) {
+      if (!data) return;
+      if (data.inQueue === true) {
         setMyPosition(data as MyPositionResponse);
+        setPositionLoaded(true);
+      } else if (data.inQueue === false && myPositionRef.current?.inQueue === true) {
+        // Server explicitly says we're not in queue while we thought we were → expelled
+        setMyPosition({ inQueue: false });
         setPositionLoaded(true);
       }
     });
@@ -156,9 +163,23 @@ export function useQueueSocket() {
     socket.on('queue:updated', (event: QueueUpdatedEvent) => {
       const queue = extractStopQueue(event);
       const stopId = event?.stopId ?? queue?.stopId;
-      if (stopId === subscribedStopRef.current && queue) {
+      if (!queue) return;
+
+      if (stopId === subscribedStopRef.current) {
         // processQueueData updates both queue list AND derives my position
         processQueueDataRef.current(queue);
+      } else if (
+        driverIdRef.current != null &&
+        myPositionRef.current?.inQueue === true &&
+        myPositionRef.current?.stop?.id === stopId
+      ) {
+        // Driver is viewing a different stop but received an update for their queue stop.
+        // Check if they've been expelled (no longer in the vehicle list).
+        const stillInQueue = queue.vehicles.some((v) => v.driver.id === driverIdRef.current);
+        if (!stillInQueue) {
+          setMyPosition({ inQueue: false });
+          setPositionLoaded(true);
+        }
       }
     });
 
@@ -180,9 +201,10 @@ export function useQueueSocket() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ref to avoid stale closures in socket handlers
+  // Refs to avoid stale closures in socket handlers (updated every render)
   const processQueueDataRef = useRef(processQueueData);
   processQueueDataRef.current = processQueueData;
+  myPositionRef.current = myPosition;
 
   // Subscribe to a stop's queue
   const subscribeToStop = useCallback((stopId: number) => {
@@ -264,7 +286,7 @@ export function useQueueSocket() {
   // Exit queue
   const exitQueue = useCallback((
     exitReasonId: number,
-    options?: { observations?: string; scheduledExitTime?: string },
+    options?: { observations?: string },
   ): Promise<SocketCallbackResponse> => {
     return new Promise((resolve) => {
       const socket = socketRef.current;
@@ -278,24 +300,28 @@ export function useQueueSocket() {
         const success = response?.success === true;
         const message = response?.message ?? '';
         if (success) {
-          setMyPosition({ inQueue: false });
-          setPositionLoaded(true);
+          const isScheduled = (message as string).toLowerCase().includes('programada');
 
-          // Backend auto-unsubscribes from room after exit,
-          // but user is still viewing this stop — re-subscribe to keep getting updates
-          const viewingStop = subscribedStopRef.current;
-          if (viewingStop != null) {
-            socket.emit('queue:subscribe', { stopId: viewingStop });
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            socket.emit('queue:getByStop', { stopId: viewingStop }, (resp: any) => {
-              if (resp) {
-                const queue = extractStopQueue(resp);
-                if (queue) {
-                  processQueueDataRef.current(queue);
+          if (!isScheduled) {
+            // Immediate exit — clear position and re-subscribe to keep getting updates
+            setMyPosition({ inQueue: false });
+            setPositionLoaded(true);
+
+            const viewingStop = subscribedStopRef.current;
+            if (viewingStop != null) {
+              socket.emit('queue:subscribe', { stopId: viewingStop });
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              socket.emit('queue:getByStop', { stopId: viewingStop }, (resp: any) => {
+                if (resp) {
+                  const queue = extractStopQueue(resp);
+                  if (queue) {
+                    processQueueDataRef.current(queue);
+                  }
                 }
-              }
-            });
+              });
+            }
           }
+          // Scheduled exit: driver stays in queue until cron fires — no state change needed
         }
         resolve({ success, message });
       });
