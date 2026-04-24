@@ -170,7 +170,7 @@ export const vehicleStopsService = {
 
   // ── Exit Reasons ───────────────────────────────────────────────
 
-  getExitReasons: async (stopId: number): Promise<StopExitReason[]> => {
+  getExitReasons: async (stopId: number): Promise<{ immediate: StopExitReason[]; scheduled: StopExitReason[] }> => {
     const response = await fetch(`${API_BASE_URL}/vehicle-stops/${stopId}/exit-reasons`, {
       headers: authUtils.getAuthHeaders(),
     });
@@ -183,7 +183,8 @@ export const vehicleStopsService = {
       headers: authUtils.getAuthHeaders(),
     });
     if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return response.json();
+    const json = await response.json();
+    return Array.isArray(json) ? json : (Object.values(json).find(Array.isArray) as StopExitReason[] ?? []);
   },
 
   createExitReason: async (stopId: number, data: CreateExitReasonDto): Promise<StopExitReason> => {

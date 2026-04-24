@@ -32,28 +32,19 @@ interface ExitReasonsDialogProps {
 
 interface FormState {
   name: string;
-  sortOrder: string;
-  autoExitEnabled: boolean;
   autoExitHour: string;
 }
 
-const EMPTY_FORM: FormState = {
-  name: '',
-  sortOrder: '0',
-  autoExitEnabled: false,
-  autoExitHour: '09:00',
-};
+const EMPTY_FORM: FormState = { name: '', autoExitHour: '09:00' };
 
-export function ExitReasonsDialog({
-  open,
-  onOpenChange,
-  zone,
-}: ExitReasonsDialogProps) {
-  const [reasons, setReasons] = useState<StopExitReason[]>([]);
+export function ExitReasonsDialog({ open, onOpenChange, zone }: ExitReasonsDialogProps) {
+  const [immediate, setImmediate] = useState<StopExitReason[]>([]);
+  const [scheduled, setScheduled] = useState<StopExitReason[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  // 'immediate' | 'scheduled' | null — which create form is open
+  const [createType, setCreateType] = useState<'immediate' | 'scheduled' | null>(null);
   const [createForm, setCreateForm] = useState<FormState>(EMPTY_FORM);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -69,9 +60,10 @@ export function ExitReasonsDialog({
     if (open && zone) {
       fetchReasons();
     } else {
-      setReasons([]);
+      setImmediate([]);
+      setScheduled([]);
       setError(null);
-      setShowCreateForm(false);
+      setCreateType(null);
       setEditingId(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,7 +75,8 @@ export function ExitReasonsDialog({
     setError(null);
     try {
       const data = await vehicleStopsService.getAllExitReasons(zone.id);
-      setReasons(data);
+      setImmediate(data.filter((r) => r.autoExitHour === null));
+      setScheduled(data.filter((r) => r.autoExitHour !== null));
     } catch {
       setError('No se pudieron cargar los motivos. Intenta de nuevo.');
     } finally {
@@ -91,22 +84,24 @@ export function ExitReasonsDialog({
     }
   };
 
-  const buildAutoExitHour = (form: FormState): string | null =>
-    form.autoExitEnabled && form.autoExitHour ? form.autoExitHour : null;
-
   const handleCreate = async () => {
-    if (!zone || !createForm.name.trim()) return;
+    if (!zone || !createForm.name.trim() || !createType) return;
     setCreateLoading(true);
     setCreateError(null);
     try {
+      const isScheduled = createType === 'scheduled';
       const newReason = await vehicleStopsService.createExitReason(zone.id, {
         name: createForm.name.trim(),
-        autoExitHour: buildAutoExitHour(createForm),
-        sortOrder: Number(createForm.sortOrder) || 0,
+        autoExitHour: isScheduled ? createForm.autoExitHour : null,
+        sortOrder: isScheduled ? scheduled.length : immediate.length,
       });
-      setReasons((prev) => [...prev, newReason]);
+      if (isScheduled) {
+        setScheduled((prev) => [...prev, newReason]);
+      } else {
+        setImmediate((prev) => [...prev, newReason]);
+      }
       setCreateForm(EMPTY_FORM);
-      setShowCreateForm(false);
+      setCreateType(null);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Error al crear el motivo');
     } finally {
@@ -115,11 +110,10 @@ export function ExitReasonsDialog({
   };
 
   const handleEditStart = (reason: StopExitReason) => {
+    setCreateType(null);
     setEditingId(reason.id);
     setEditForm({
       name: reason.name,
-      sortOrder: String(reason.sortOrder),
-      autoExitEnabled: reason.autoExitHour !== null,
       autoExitHour: reason.autoExitHour ?? '09:00',
     });
     setEditError(null);
@@ -132,15 +126,21 @@ export function ExitReasonsDialog({
 
   const handleEditSave = async () => {
     if (!zone || editingId === null || !editForm.name.trim()) return;
+    const editingReason = [...immediate, ...scheduled].find((r) => r.id === editingId);
+    if (!editingReason) return;
     setEditLoading(true);
     setEditError(null);
     try {
+      const isScheduled = editingReason.autoExitHour !== null;
       const updated = await vehicleStopsService.updateExitReason(zone.id, editingId, {
         name: editForm.name.trim(),
-        autoExitHour: buildAutoExitHour(editForm),
-        sortOrder: Number(editForm.sortOrder) || 0,
+        autoExitHour: isScheduled ? editForm.autoExitHour : null,
       });
-      setReasons((prev) => prev.map((r) => (r.id === editingId ? updated : r)));
+      if (isScheduled) {
+        setScheduled((prev) => prev.map((r) => (r.id === editingId ? updated : r)));
+      } else {
+        setImmediate((prev) => prev.map((r) => (r.id === editingId ? updated : r)));
+      }
       setEditingId(null);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Error al guardar cambios');
@@ -156,7 +156,12 @@ export function ExitReasonsDialog({
       const updated = await vehicleStopsService.updateExitReason(zone.id, reason.id, {
         status: reason.status === 1 ? 0 : 1,
       });
-      setReasons((prev) => prev.map((r) => (r.id === reason.id ? updated : r)));
+      const isScheduled = reason.autoExitHour !== null;
+      if (isScheduled) {
+        setScheduled((prev) => prev.map((r) => (r.id === reason.id ? updated : r)));
+      } else {
+        setImmediate((prev) => prev.map((r) => (r.id === reason.id ? updated : r)));
+      }
     } catch {
       // silently ignore
     } finally {
@@ -164,7 +169,18 @@ export function ExitReasonsDialog({
     }
   };
 
-  const activeCount = reasons.filter((r) => r.status === 1).length;
+  const openCreateForm = (type: 'immediate' | 'scheduled') => {
+    setEditingId(null);
+    setCreateForm(EMPTY_FORM);
+    setCreateError(null);
+    setCreateType(type);
+  };
+
+  const closeCreateForm = () => {
+    setCreateType(null);
+    setCreateError(null);
+    setCreateForm(EMPTY_FORM);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -176,12 +192,10 @@ export function ExitReasonsDialog({
             </div>
           </div>
           <DialogTitle className="text-center">Motivos de salida</DialogTitle>
-          {zone && (
-            <p className="text-center text-sm text-gray-500 mt-1">{zone.name}</p>
-          )}
+          {zone && <p className="text-center text-sm text-gray-500 mt-1">{zone.name}</p>}
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-2 py-1 min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-1">
           {loading && (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -200,116 +214,65 @@ export function ExitReasonsDialog({
             </div>
           )}
 
-          {!loading && !error && reasons.length === 0 && (
-            <div className="text-center py-8 text-gray-400 text-sm">
-              <LogOut className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              Sin motivos configurados para este paradero
-            </div>
-          )}
-
-          {!loading && !error && reasons.length > 0 && (
+          {!loading && !error && (
             <>
-              <p className="text-xs text-gray-500 px-1">
-                {activeCount} activo{activeCount !== 1 ? 's' : ''} de {reasons.length}
-              </p>
-
-              {reasons.map((reason) => {
-                const isActive = reason.status === 1;
-                const isEditing = editingId === reason.id;
-                const isToggling = togglingId === reason.id;
-
-                return (
-                  <div
-                    key={reason.id}
-                    className={`rounded-xl border p-3 transition-colors ${
-                      isActive ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200 opacity-60'
-                    }`}
-                  >
-                    {isEditing ? (
-                      <AutoExitForm
-                        form={editForm}
-                        onChange={setEditForm}
-                        disabled={editLoading}
-                        error={editError}
-                        onSave={handleEditSave}
-                        onCancel={handleEditCancel}
-                        saveLabel="Guardar"
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-gray-900 truncate">{reason.name}</p>
-                          {reason.autoExitHour ? (
-                            <p className="text-xs text-blue-600 flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3" />
-                              Auto-salida {reason.autoExitHour}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-gray-400">Orden: {reason.sortOrder}</p>
-                          )}
-                        </div>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold shrink-0 ${
-                          isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {isActive ? 'Activo' : 'Inactivo'}
-                        </span>
-                        <button
-                          onClick={() => handleEditStart(reason)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 shrink-0"
-                          title="Editar"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(reason)}
-                          disabled={isToggling}
-                          className={`w-8 h-8 flex items-center justify-center rounded-lg shrink-0 transition-colors ${
-                            isActive ? 'hover:bg-orange-50 text-orange-500' : 'hover:bg-emerald-50 text-emerald-600'
-                          }`}
-                          title={isActive ? 'Desactivar' : 'Activar'}
-                        >
-                          {isToggling
-                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : isActive ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />
-                          }
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
-
-          {/* Create form */}
-          {showCreateForm && (
-            <div className="rounded-xl border-2 border-dashed border-green-300 bg-green-50 p-3 space-y-2">
-              <p className="text-xs font-semibold text-green-700">Nuevo motivo de salida</p>
-              <AutoExitForm
-                form={createForm}
-                onChange={setCreateForm}
-                disabled={createLoading}
-                error={createError}
-                onSave={handleCreate}
-                onCancel={() => { setShowCreateForm(false); setCreateError(null); setCreateForm(EMPTY_FORM); }}
-                saveLabel="Crear"
-                autoFocus
+              {/* ── Salida inmediata ─────────────────────────── */}
+              <Section
+                title="Salida inmediata"
+                color="red"
+                reasons={immediate}
+                editingId={editingId}
+                editForm={editForm}
+                editLoading={editLoading}
+                editError={editError}
+                togglingId={togglingId}
+                onEditStart={handleEditStart}
+                onEditChange={setEditForm}
+                onEditSave={handleEditSave}
+                onEditCancel={handleEditCancel}
+                onToggleStatus={handleToggleStatus}
+                showCreate={createType === 'immediate'}
+                createForm={createForm}
+                createLoading={createLoading}
+                createError={createError}
+                onCreateChange={setCreateForm}
+                onCreateSave={handleCreate}
+                onCreateOpen={() => openCreateForm('immediate')}
+                onCreateClose={closeCreateForm}
               />
-            </div>
+
+              <div className="border-t border-gray-100" />
+
+              {/* ── Salida programada ─────────────────────────── */}
+              <Section
+                title="Salida programada"
+                color="blue"
+                reasons={scheduled}
+                editingId={editingId}
+                editForm={editForm}
+                editLoading={editLoading}
+                editError={editError}
+                togglingId={togglingId}
+                onEditStart={handleEditStart}
+                onEditChange={setEditForm}
+                onEditSave={handleEditSave}
+                onEditCancel={handleEditCancel}
+                onToggleStatus={handleToggleStatus}
+                showCreate={createType === 'scheduled'}
+                createForm={createForm}
+                createLoading={createLoading}
+                createError={createError}
+                onCreateChange={setCreateForm}
+                onCreateSave={handleCreate}
+                onCreateOpen={() => openCreateForm('scheduled')}
+                onCreateClose={closeCreateForm}
+                showHour
+              />
+            </>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="shrink-0 pt-3 space-y-2 border-t border-gray-100">
-          {!showCreateForm && (
-            <Button
-              onClick={() => { setShowCreateForm(true); setEditingId(null); }}
-              className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar motivo
-            </Button>
-          )}
+        <div className="shrink-0 pt-3 border-t border-gray-100">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full h-10 text-sm">
             Cerrar
           </Button>
@@ -319,100 +282,217 @@ export function ExitReasonsDialog({
   );
 }
 
-// ── Shared create/edit form ──────────────────────────────────────────────────
+// ── Section component ────────────────────────────────────────────────────────
 
-interface AutoExitFormProps {
-  form: FormState;
-  onChange: (updater: (prev: FormState) => FormState) => void;
-  disabled: boolean;
-  error: string | null;
-  onSave: () => void;
-  onCancel: () => void;
-  saveLabel: string;
-  autoFocus?: boolean;
+interface SectionProps {
+  title: string;
+  color: 'red' | 'blue';
+  reasons: StopExitReason[];
+  editingId: number | null;
+  editForm: FormState;
+  editLoading: boolean;
+  editError: string | null;
+  togglingId: number | null;
+  onEditStart: (r: StopExitReason) => void;
+  onEditChange: (u: (prev: FormState) => FormState) => void;
+  onEditSave: () => void;
+  onEditCancel: () => void;
+  onToggleStatus: (r: StopExitReason) => void;
+  showCreate: boolean;
+  createForm: FormState;
+  createLoading: boolean;
+  createError: string | null;
+  onCreateChange: (u: (prev: FormState) => FormState) => void;
+  onCreateSave: () => void;
+  onCreateOpen: () => void;
+  onCreateClose: () => void;
+  showHour?: boolean;
 }
 
-function AutoExitForm({
-  form,
-  onChange,
-  disabled,
-  error,
-  onSave,
-  onCancel,
-  saveLabel,
-  autoFocus,
-}: AutoExitFormProps) {
+function Section({
+  title, color, reasons,
+  editingId, editForm, editLoading, editError, togglingId,
+  onEditStart, onEditChange, onEditSave, onEditCancel, onToggleStatus,
+  showCreate, createForm, createLoading, createError,
+  onCreateChange, onCreateSave, onCreateOpen, onCreateClose,
+  showHour = false,
+}: SectionProps) {
+  const accent = color === 'red'
+    ? { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-400' }
+    : { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-400' };
+
+  const activeCount = reasons.filter((r) => r.status === 1).length;
+
   return (
     <div className="space-y-2">
-      <Input
-        value={form.name}
-        onChange={(e) => onChange((f) => ({ ...f, name: e.target.value }))}
-        placeholder="Nombre del motivo"
-        className="h-9 text-sm bg-white"
-        disabled={disabled}
-        autoFocus={autoFocus}
-      />
-      <Input
-        type="number"
-        value={form.sortOrder}
-        onChange={(e) => onChange((f) => ({ ...f, sortOrder: e.target.value }))}
-        placeholder="Orden"
-        className="h-9 text-sm bg-white"
-        disabled={disabled}
-      />
-
-      {/* Toggle salida automática */}
-      <button
-        type="button"
-        onClick={() => onChange((f) => ({ ...f, autoExitEnabled: !f.autoExitEnabled }))}
-        disabled={disabled}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors bg-white ${
-          form.autoExitEnabled
-            ? 'border-blue-300 text-blue-700'
-            : 'border-gray-200 text-gray-600'
-        }`}
-      >
-        <Clock className="w-4 h-4 shrink-0" />
-        <span className="flex-1 text-left font-medium">Salida automática</span>
-        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-          form.autoExitEnabled ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-        }`}>
-          {form.autoExitEnabled && <Check className="w-2.5 h-2.5 text-white" />}
+      {/* Header */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${accent.dot}`} />
+          <span className="text-xs font-bold text-gray-700 uppercase tracking-wide">{title}</span>
+        </div>
+        <span className="text-xs text-gray-400">
+          {activeCount} activo{activeCount !== 1 ? 's' : ''}
         </span>
-      </button>
+      </div>
 
-      {/* Time picker — solo visible si el toggle está ON */}
-      {form.autoExitEnabled && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 space-y-1">
-          <p className="text-xs text-blue-600 font-medium">Hora de auto-salida</p>
+      {/* Empty state */}
+      {reasons.length === 0 && !showCreate && (
+        <p className="text-xs text-gray-400 px-1 italic">Sin motivos configurados</p>
+      )}
+
+      {/* Reason list */}
+      {reasons.map((reason) => {
+        const isActive = reason.status === 1;
+        const isEditing = editingId === reason.id;
+        const isToggling = togglingId === reason.id;
+
+        return (
+          <div
+            key={reason.id}
+            className={`rounded-xl border p-3 transition-colors ${
+              isActive ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200 opacity-60'
+            }`}
+          >
+            {isEditing ? (
+              <div className="space-y-2">
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => onEditChange((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Nombre del motivo"
+                  className="h-9 text-sm"
+                  disabled={editLoading}
+                />
+                {showHour && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Hora de auto-salida
+                    </p>
+                    <Input
+                      type="time"
+                      value={editForm.autoExitHour}
+                      onChange={(e) => onEditChange((f) => ({ ...f, autoExitHour: e.target.value }))}
+                      className="h-9 text-sm"
+                      disabled={editLoading}
+                    />
+                  </div>
+                )}
+                {editError && <p className="text-xs text-red-600">{editError}</p>}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={onEditSave}
+                    disabled={editLoading || !editForm.name.trim()}
+                    className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
+                  >
+                    {editLoading
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <><Check className="w-3 h-3 mr-1" />Guardar</>
+                    }
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={onEditCancel} disabled={editLoading} className="h-8 text-xs px-3">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm text-gray-900 truncate">{reason.name}</p>
+                  {reason.autoExitHour && (
+                    <p className="text-xs text-blue-600 flex items-center gap-1 mt-0.5">
+                      <Clock className="w-3 h-3" />
+                      {reason.autoExitHour.slice(0, 5)}
+                    </p>
+                  )}
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+                  isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {isActive ? 'Activo' : 'Inactivo'}
+                </span>
+                <button
+                  onClick={() => onEditStart(reason)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 shrink-0"
+                  title="Editar"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => onToggleStatus(reason)}
+                  disabled={isToggling}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg shrink-0 transition-colors ${
+                    isActive ? 'hover:bg-orange-50 text-orange-500' : 'hover:bg-emerald-50 text-emerald-600'
+                  }`}
+                  title={isActive ? 'Desactivar' : 'Activar'}
+                >
+                  {isToggling
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : isActive ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />
+                  }
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Create form */}
+      {showCreate && (
+        <div className={`rounded-xl border-2 border-dashed ${accent.border} ${accent.bg} p-3 space-y-2`}>
+          <p className={`text-xs font-semibold ${accent.text}`}>Nuevo motivo — {title.toLowerCase()}</p>
           <Input
-            type="time"
-            value={form.autoExitHour}
-            onChange={(e) => onChange((f) => ({ ...f, autoExitHour: e.target.value }))}
+            value={createForm.name}
+            onChange={(e) => onCreateChange((f) => ({ ...f, name: e.target.value }))}
+            placeholder="Nombre del motivo"
             className="h-9 text-sm bg-white"
-            disabled={disabled}
+            disabled={createLoading}
+            autoFocus
           />
+          {showHour && (
+            <div className="space-y-1">
+              <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                <Clock className="w-3 h-3" /> Hora de auto-salida
+              </p>
+              <Input
+                type="time"
+                value={createForm.autoExitHour}
+                onChange={(e) => onCreateChange((f) => ({ ...f, autoExitHour: e.target.value }))}
+                className="h-9 text-sm bg-white"
+                disabled={createLoading}
+              />
+            </div>
+          )}
+          {createError && <p className="text-xs text-red-600">{createError}</p>}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={onCreateSave}
+              disabled={createLoading || !createForm.name.trim()}
+              className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
+            >
+              {createLoading
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : <><Check className="w-3 h-3 mr-1" />Crear</>
+              }
+            </Button>
+            <Button size="sm" variant="outline" onClick={onCreateClose} disabled={createLoading} className="h-8 text-xs px-3">
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
-
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          onClick={onSave}
-          disabled={disabled || !form.name.trim()}
-          className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
+      {/* Add button */}
+      {!showCreate && (
+        <button
+          onClick={onCreateOpen}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed ${accent.border} ${accent.text} hover:${accent.bg} text-xs font-medium transition-colors`}
         >
-          {disabled
-            ? <Loader2 className="w-3 h-3 animate-spin" />
-            : <><Check className="w-3 h-3 mr-1" />{saveLabel}</>
-          }
-        </Button>
-        <Button size="sm" variant="outline" onClick={onCancel} disabled={disabled} className="h-8 text-xs px-3">
-          <X className="w-3 h-3" />
-        </Button>
-      </div>
+          <Plus className="w-3.5 h-3.5" />
+          Agregar motivo
+        </button>
+      )}
     </div>
   );
 }

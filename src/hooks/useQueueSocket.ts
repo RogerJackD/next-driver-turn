@@ -301,27 +301,30 @@ export function useQueueSocket() {
         const message = response?.message ?? '';
         if (success) {
           const isScheduled = (message as string).toLowerCase().includes('programada');
+          const viewingStop = subscribedStopRef.current;
 
           if (!isScheduled) {
-            // Immediate exit — clear position and re-subscribe to keep getting updates
+            // Immediate exit — clear position and refresh queue
             setMyPosition({ inQueue: false });
             setPositionLoaded(true);
 
-            const viewingStop = subscribedStopRef.current;
             if (viewingStop != null) {
               socket.emit('queue:subscribe', { stopId: viewingStop });
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               socket.emit('queue:getByStop', { stopId: viewingStop }, (resp: any) => {
                 if (resp) {
                   const queue = extractStopQueue(resp);
-                  if (queue) {
-                    processQueueDataRef.current(queue);
-                  }
+                  if (queue) processQueueDataRef.current(queue);
                 }
               });
             }
+          } else {
+            // Scheduled exit — backend auto-unsubscribes on queue:exit,
+            // re-subscribe so the cron's queue:updated reaches this client
+            if (viewingStop != null) {
+              socket.emit('queue:subscribe', { stopId: viewingStop });
+            }
           }
-          // Scheduled exit: driver stays in queue until cron fires — no state change needed
         }
         resolve({ success, message });
       });

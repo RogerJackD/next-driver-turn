@@ -46,6 +46,7 @@ export default function Paraderos() {
   const [selectedEntry, setSelectedEntry] = useState<QueueEntry | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isExitDialogOpen, setIsExitDialogOpen] = useState(false);
+  const [exitDialogMode, setExitDialogMode] = useState<'immediate' | 'scheduled'>('immediate');
   const [isRemoveDriverDialogOpen, setIsRemoveDriverDialogOpen] = useState(false);
   const [driverToRemove, setDriverToRemove] = useState<QueueEntry | null>(null);
 
@@ -437,14 +438,24 @@ export default function Paraderos() {
           )}
 
           {isConnected && positionLoaded && isInCurrentZone && (
-            <Button
-              onClick={() => setIsExitDialogOpen(true)}
-              disabled={actionLoading}
-              className="w-full h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
-            >
-              <LogOut className="w-5 h-5" />
-              SALIR DE LA COLA
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => { setExitDialogMode('immediate'); setIsExitDialogOpen(true); }}
+                disabled={actionLoading}
+                className="flex-1 h-14 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-5 h-5 shrink-0" />
+                <span className="text-sm leading-tight text-center">Salir de la cola</span>
+              </Button>
+              <Button
+                onClick={() => { setExitDialogMode('scheduled'); setIsExitDialogOpen(true); }}
+                disabled={actionLoading}
+                className="flex-1 h-14 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Clock className="w-5 h-5 shrink-0" />
+                <span className="text-sm leading-tight text-center">Programar Salida</span>
+              </Button>
+            </div>
           )}
 
           {isConnected && positionLoaded && isInDifferentZone && (
@@ -473,6 +484,7 @@ export default function Paraderos() {
         onConfirm={handleExitQueue}
         zoneName={myPosition?.stop?.name ?? ''}
         stopId={myPosition?.stop?.id ?? null}
+        mode={exitDialogMode}
       />
 
       {/* Remove Driver Dialog */}
