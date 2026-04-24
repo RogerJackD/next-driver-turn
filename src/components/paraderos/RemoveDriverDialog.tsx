@@ -20,6 +20,7 @@ interface RemoveDriverDialogProps {
   onOpenChange: (open: boolean) => void;
   driverName: string;
   queueId: number | null;
+  onSuppressSound?: () => void;
   onSuccess: () => void;
 }
 
@@ -28,6 +29,7 @@ export function RemoveDriverDialog({
   onOpenChange,
   driverName,
   queueId,
+  onSuppressSound,
   onSuccess,
 }: RemoveDriverDialogProps) {
   const [step, setStep] = useState<'reason' | 'confirm'>('reason');
@@ -89,6 +91,7 @@ export function RemoveDriverDialog({
     if (!queueId || !selectedReason) return;
     setSubmitting(true);
     setSubmitError(null);
+    onSuppressSound?.();
     try {
       await currentQueueService.peerExit(queueId, {
         expulsionReasonId: selectedReason.id,
@@ -113,9 +116,9 @@ export function RemoveDriverDialog({
                   <UserMinus className="w-6 h-6 text-red-600" />
                 </div>
               </div>
-              <DialogTitle className="text-center">Retirar conductor</DialogTitle>
+              <DialogTitle className="text-center">Expulsar conductor</DialogTitle>
               <DialogDescription className="text-center">
-                Estás a punto de retirar a{' '}
+                Estás a punto de expulsar a{' '}
                 <span className="font-semibold text-gray-900">{driverName}</span> de la cola.
                 <br />
                 Selecciona el motivo.
@@ -196,9 +199,9 @@ export function RemoveDriverDialog({
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
               </div>
-              <DialogTitle className="text-center">¿Confirmar retiro?</DialogTitle>
+              <DialogTitle className="text-center">¿Confirmar expulsión?</DialogTitle>
               <DialogDescription className="text-center">
-                Se retirará a{' '}
+                Se expulsará a{' '}
                 <span className="font-semibold text-gray-900">{driverName}</span> de la cola.
               </DialogDescription>
             </DialogHeader>
@@ -234,10 +237,10 @@ export function RemoveDriverDialog({
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Retirando...
+                    Expulsando...
                   </>
                 ) : (
-                  'Sí, retirar conductor'
+                  'Sí, expulsar conductor'
                 )}
               </Button>
               <Button onClick={handleBack} variant="outline" className="w-full" disabled={submitting}>
