@@ -27,6 +27,7 @@ import {
   Wifi,
   WifiOff,
   AlertCircle,
+  Clock,
   UserMinus,
 } from 'lucide-react';
 
@@ -39,6 +40,7 @@ export default function Paraderos() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionInfo, setActionInfo] = useState<string | null>(null);
 
   // Dialog states
   const [selectedEntry, setSelectedEntry] = useState<QueueEntry | null>(null);
@@ -59,10 +61,25 @@ export default function Paraderos() {
     changeStop,
   } = useQueueSocket();
 
-  // Queue sound notification
+  // Sound refs
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioExpelledRef = useRef<HTMLAudioElement>(null);
   const suppressSoundUntilRef = useRef<number>(Date.now() + 3000);
+  const prevInQueueRef = useRef<boolean | null>(null);
 
+  // Detect expulsion: inQueue true→false without self-action (must run BEFORE queue sound effect)
+  useEffect(() => {
+    const wasInQueue = prevInQueueRef.current;
+    const isNowInQueue = myPosition?.inQueue === true;
+    prevInQueueRef.current = isNowInQueue;
+
+    if (wasInQueue === true && !isNowInQueue && Date.now() > suppressSoundUntilRef.current) {
+      suppressSoundUntilRef.current = Date.now() + 2000;
+      audioExpelledRef.current?.play().catch(() => {});
+    }
+  }, [myPosition]);
+
+  // Queue sound for other drivers already in queue
   useEffect(() => {
     if (currentQueue === null) return;
     if (Date.now() < suppressSoundUntilRef.current) return;
@@ -126,11 +143,10 @@ export default function Paraderos() {
     if (!currentZone) return;
     setActionLoading(true);
     setActionError(null);
+    suppressSoundUntilRef.current = Date.now() + 2000;
     try {
       const response = await enterQueue(currentZone.id);
-      if (response.success) {
-        suppressSoundUntilRef.current = Date.now() + 1500;
-      } else {
+      if (!response.success) {
         // Don't show error if "already in queue" — the hook auto-corrects state
         const msg = (response.message ?? '').toLowerCase();
         const isAlreadyInQueue =
@@ -150,12 +166,18 @@ export default function Paraderos() {
   }, [currentZone, enterQueue]);
 
   // Exit queue via dialog
-  const handleExitQueue = useCallback(async (exitReasonId: number, scheduledExitTime?: string) => {
+  const handleExitQueue = useCallback(async (exitReasonId: number) => {
     setActionError(null);
-    const response = await exitQueue(exitReasonId, { scheduledExitTime });
+    setActionInfo(null);
+    suppressSoundUntilRef.current = Date.now() + 2000;
+    const response = await exitQueue(exitReasonId);
     if (!response.success) {
       setActionError(response.message || 'Error al salir de la cola');
       throw new Error(response.message);
+    }
+    const msg = response.message ?? '';
+    if (msg.toLowerCase().includes('programada')) {
+      setActionInfo(msg);
     }
   }, [exitQueue]);
 
@@ -164,6 +186,7 @@ export default function Paraderos() {
     if (!currentZone) return;
     setActionLoading(true);
     setActionError(null);
+    suppressSoundUntilRef.current = Date.now() + 2000;
     try {
       const response = await changeStop(currentZone.id);
       if (!response.success) {
@@ -354,7 +377,7 @@ export default function Paraderos() {
                             setIsRemoveDriverDialogOpen(true);
                           }}
                           className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 hover:bg-red-100 border border-red-200 text-red-500 hover:text-red-600 transition-colors"
-                          title="Retirar conductor"
+                          title="Expulsar conductor"
                         >
                           <UserMinus className="w-4 h-4" />
                         </button>
@@ -377,6 +400,13 @@ export default function Paraderos() {
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{actionError}</p>
+            </div>
+          )}
+          {/* Scheduled exit info */}
+          {actionInfo && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2">
+              <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-700">{actionInfo}</p>
             </div>
           )}
           {(!isConnected || !positionLoaded) && (
@@ -458,6 +488,7 @@ export default function Paraderos() {
             : ''
         }
         queueId={driverToRemove?.queueId ?? null}
+        onSuppressSound={() => { suppressSoundUntilRef.current = Date.now() + 2000; }}
         onSuccess={() => {
           setDriverToRemove(null);
           if (currentQueue?.stopId) subscribeToStop(currentQueue.stopId);
@@ -466,6 +497,8 @@ export default function Paraderos() {
 
       {/* Queue sound notification */}
       <audio ref={audioRef} src="/sounds/universfield-new-notification-024-370048.mp3" preload="auto" />
+      {/* Expelled sound — plays only for the driver who was removed */}
+      <audio ref={audioExpelledRef} src="/sounds/mixkit-software-interface-back-2575.wav" preload="auto" />
 
       {/* Driver Info Modal */}
       <Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
