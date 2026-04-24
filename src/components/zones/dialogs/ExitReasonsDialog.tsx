@@ -32,11 +32,17 @@ interface ExitReasonsDialogProps {
 
 interface FormState {
   name: string;
-  requiresTime: boolean;
   sortOrder: string;
+  autoExitEnabled: boolean;
+  autoExitHour: string;
 }
 
-const EMPTY_FORM: FormState = { name: '', requiresTime: false, sortOrder: '0' };
+const EMPTY_FORM: FormState = {
+  name: '',
+  sortOrder: '0',
+  autoExitEnabled: false,
+  autoExitHour: '09:00',
+};
 
 export function ExitReasonsDialog({
   open,
@@ -85,6 +91,9 @@ export function ExitReasonsDialog({
     }
   };
 
+  const buildAutoExitHour = (form: FormState): string | null =>
+    form.autoExitEnabled && form.autoExitHour ? form.autoExitHour : null;
+
   const handleCreate = async () => {
     if (!zone || !createForm.name.trim()) return;
     setCreateLoading(true);
@@ -92,7 +101,7 @@ export function ExitReasonsDialog({
     try {
       const newReason = await vehicleStopsService.createExitReason(zone.id, {
         name: createForm.name.trim(),
-        requiresTime: createForm.requiresTime,
+        autoExitHour: buildAutoExitHour(createForm),
         sortOrder: Number(createForm.sortOrder) || 0,
       });
       setReasons((prev) => [...prev, newReason]);
@@ -109,8 +118,9 @@ export function ExitReasonsDialog({
     setEditingId(reason.id);
     setEditForm({
       name: reason.name,
-      requiresTime: reason.requiresTime,
       sortOrder: String(reason.sortOrder),
+      autoExitEnabled: reason.autoExitHour !== null,
+      autoExitHour: reason.autoExitHour ?? '09:00',
     });
     setEditError(null);
   };
@@ -127,7 +137,7 @@ export function ExitReasonsDialog({
     try {
       const updated = await vehicleStopsService.updateExitReason(zone.id, editingId, {
         name: editForm.name.trim(),
-        requiresTime: editForm.requiresTime,
+        autoExitHour: buildAutoExitHour(editForm),
         sortOrder: Number(editForm.sortOrder) || 0,
       });
       setReasons((prev) => prev.map((r) => (r.id === editingId ? updated : r)));
@@ -216,68 +226,27 @@ export function ExitReasonsDialog({
                     }`}
                   >
                     {isEditing ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editForm.name}
-                          onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                          placeholder="Nombre del motivo"
-                          className="h-9 text-sm"
-                          disabled={editLoading}
-                        />
-                        <Input
-                          type="number"
-                          value={editForm.sortOrder}
-                          onChange={(e) => setEditForm((f) => ({ ...f, sortOrder: e.target.value }))}
-                          placeholder="Orden"
-                          className="h-9 text-sm"
-                          disabled={editLoading}
-                        />
-                        {/* Toggle requiresTime */}
-                        <button
-                          type="button"
-                          onClick={() => setEditForm((f) => ({ ...f, requiresTime: !f.requiresTime }))}
-                          disabled={editLoading}
-                          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
-                            editForm.requiresTime
-                              ? 'border-blue-300 bg-blue-50 text-blue-700'
-                              : 'border-gray-200 bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          <Clock className="w-4 h-4 shrink-0" />
-                          <span className="flex-1 text-left font-medium">Requiere hora</span>
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                            editForm.requiresTime ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                          }`}>
-                            {editForm.requiresTime && <Check className="w-2.5 h-2.5 text-white" />}
-                          </span>
-                        </button>
-                        {editError && <p className="text-xs text-red-600">{editError}</p>}
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={handleEditSave}
-                            disabled={editLoading || !editForm.name.trim()}
-                            className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
-                          >
-                            {editLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3 mr-1" />Guardar</>}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={handleEditCancel} disabled={editLoading} className="h-8 text-xs px-3">
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
+                      <AutoExitForm
+                        form={editForm}
+                        onChange={setEditForm}
+                        disabled={editLoading}
+                        error={editError}
+                        onSave={handleEditSave}
+                        onCancel={handleEditCancel}
+                        saveLabel="Guardar"
+                      />
                     ) : (
                       <div className="flex items-center gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="font-medium text-sm text-gray-900 truncate">{reason.name}</p>
-                            {reason.requiresTime && (
-                              <span title="Requiere hora">
-                                <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-400">Orden: {reason.sortOrder}</p>
+                          <p className="font-medium text-sm text-gray-900 truncate">{reason.name}</p>
+                          {reason.autoExitHour ? (
+                            <p className="text-xs text-blue-600 flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              Auto-salida {reason.autoExitHour}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-400">Orden: {reason.sortOrder}</p>
+                          )}
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold shrink-0 ${
                           isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
@@ -316,61 +285,16 @@ export function ExitReasonsDialog({
           {showCreateForm && (
             <div className="rounded-xl border-2 border-dashed border-green-300 bg-green-50 p-3 space-y-2">
               <p className="text-xs font-semibold text-green-700">Nuevo motivo de salida</p>
-              <Input
-                value={createForm.name}
-                onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Nombre del motivo"
-                className="h-9 text-sm bg-white"
+              <AutoExitForm
+                form={createForm}
+                onChange={setCreateForm}
                 disabled={createLoading}
+                error={createError}
+                onSave={handleCreate}
+                onCancel={() => { setShowCreateForm(false); setCreateError(null); setCreateForm(EMPTY_FORM); }}
+                saveLabel="Crear"
                 autoFocus
               />
-              <Input
-                type="number"
-                value={createForm.sortOrder}
-                onChange={(e) => setCreateForm((f) => ({ ...f, sortOrder: e.target.value }))}
-                placeholder="Orden (0 = primero)"
-                className="h-9 text-sm bg-white"
-                disabled={createLoading}
-              />
-              {/* Toggle requiresTime */}
-              <button
-                type="button"
-                onClick={() => setCreateForm((f) => ({ ...f, requiresTime: !f.requiresTime }))}
-                disabled={createLoading}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors bg-white ${
-                  createForm.requiresTime
-                    ? 'border-blue-300 text-blue-700'
-                    : 'border-gray-200 text-gray-600'
-                }`}
-              >
-                <Clock className="w-4 h-4 shrink-0" />
-                <span className="flex-1 text-left font-medium">Requiere hora de salida</span>
-                <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                  createForm.requiresTime ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                }`}>
-                  {createForm.requiresTime && <Check className="w-2.5 h-2.5 text-white" />}
-                </span>
-              </button>
-              {createError && <p className="text-xs text-red-600">{createError}</p>}
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={createLoading || !createForm.name.trim()}
-                  className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
-                >
-                  {createLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3 mr-1" />Crear</>}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => { setShowCreateForm(false); setCreateError(null); setCreateForm(EMPTY_FORM); }}
-                  disabled={createLoading}
-                  className="h-8 text-xs px-3"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
             </div>
           )}
         </div>
@@ -392,5 +316,103 @@ export function ExitReasonsDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── Shared create/edit form ──────────────────────────────────────────────────
+
+interface AutoExitFormProps {
+  form: FormState;
+  onChange: (updater: (prev: FormState) => FormState) => void;
+  disabled: boolean;
+  error: string | null;
+  onSave: () => void;
+  onCancel: () => void;
+  saveLabel: string;
+  autoFocus?: boolean;
+}
+
+function AutoExitForm({
+  form,
+  onChange,
+  disabled,
+  error,
+  onSave,
+  onCancel,
+  saveLabel,
+  autoFocus,
+}: AutoExitFormProps) {
+  return (
+    <div className="space-y-2">
+      <Input
+        value={form.name}
+        onChange={(e) => onChange((f) => ({ ...f, name: e.target.value }))}
+        placeholder="Nombre del motivo"
+        className="h-9 text-sm bg-white"
+        disabled={disabled}
+        autoFocus={autoFocus}
+      />
+      <Input
+        type="number"
+        value={form.sortOrder}
+        onChange={(e) => onChange((f) => ({ ...f, sortOrder: e.target.value }))}
+        placeholder="Orden"
+        className="h-9 text-sm bg-white"
+        disabled={disabled}
+      />
+
+      {/* Toggle salida automática */}
+      <button
+        type="button"
+        onClick={() => onChange((f) => ({ ...f, autoExitEnabled: !f.autoExitEnabled }))}
+        disabled={disabled}
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors bg-white ${
+          form.autoExitEnabled
+            ? 'border-blue-300 text-blue-700'
+            : 'border-gray-200 text-gray-600'
+        }`}
+      >
+        <Clock className="w-4 h-4 shrink-0" />
+        <span className="flex-1 text-left font-medium">Salida automática</span>
+        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+          form.autoExitEnabled ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+        }`}>
+          {form.autoExitEnabled && <Check className="w-2.5 h-2.5 text-white" />}
+        </span>
+      </button>
+
+      {/* Time picker — solo visible si el toggle está ON */}
+      {form.autoExitEnabled && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 space-y-1">
+          <p className="text-xs text-blue-600 font-medium">Hora de auto-salida</p>
+          <Input
+            type="time"
+            value={form.autoExitHour}
+            onChange={(e) => onChange((f) => ({ ...f, autoExitHour: e.target.value }))}
+            className="h-9 text-sm bg-white"
+            disabled={disabled}
+          />
+        </div>
+      )}
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          onClick={onSave}
+          disabled={disabled || !form.name.trim()}
+          className="flex-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-xs"
+        >
+          {disabled
+            ? <Loader2 className="w-3 h-3 animate-spin" />
+            : <><Check className="w-3 h-3 mr-1" />{saveLabel}</>
+          }
+        </Button>
+        <Button size="sm" variant="outline" onClick={onCancel} disabled={disabled} className="h-8 text-xs px-3">
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+    </div>
   );
 }
