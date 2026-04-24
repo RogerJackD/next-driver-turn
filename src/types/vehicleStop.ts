@@ -38,7 +38,7 @@ export interface StopExitReason {
   id: number;
   vehicleStopId: number;
   name: string;
-  requiresTime: boolean;
+  autoExitHour: string | null;
   sortOrder: number;
   status: number;
   createdAt: string;
@@ -47,13 +47,13 @@ export interface StopExitReason {
 
 export interface CreateExitReasonDto {
   name: string;
-  requiresTime: boolean;
+  autoExitHour?: string | null;
   sortOrder?: number;
 }
 
 export interface UpdateExitReasonDto {
   name?: string;
-  requiresTime?: boolean;
+  autoExitHour?: string | null;
   sortOrder?: number;
   status?: number;
 }
