@@ -1,0 +1,21 @@
+services:
+  svc-app-parking-zone-control-frontend:
+    env_file:
+      - .env
+    build: 
+      context : .
+      args:
+        - NEXT_PUBLIC_API_URL
+        - NEXT_PUBLIC_SOCKET_URL
+        - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    container_name: svc-app-parking-zone-control-frontend
+    ports:
+     - "3001:3000"
+    #restart: unless-stopped
+    #mem_limit: 512m
+    read_only: false
+    networks:
+      - proxy-net
+networks:
+   proxy-net:
+    external: true
